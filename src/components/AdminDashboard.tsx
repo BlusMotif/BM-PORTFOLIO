@@ -1,0 +1,1345 @@
+import React, { useState, useRef } from 'react';
+import { useFirebase } from '../context/FirebaseContext';
+import { setData } from '../firebase/database';
+import { uploadFile } from '../firebase/storage';
+import { initializeDefaultData } from '../firebase/initData';
+import { uploadProvidedFiles } from '../firebase/uploadFiles';
+
+interface AdminDashboardProps {
+  onLogout: () => void;
+}
+
+// Component definitions moved outside to prevent re-creation on every render
+const DynamicSkillsInput: React.FC<{ 
+  category: string; 
+  title: string; 
+  placeholder: string;
+  localData: any;
+  updateLocalData: (section: string, newData: any) => void;
+}> = ({ category, title, placeholder, localData, updateLocalData }) => {
+  const addSkill = () => {
+    const newSkills = [...(localData.skills?.[category] || []), ''];
+    updateLocalData('skills', {
+      ...localData.skills,
+      [category]: newSkills
+    });
+  };
+
+  const updateSkill = (index: number, value: string) => {
+    const newSkills = [...(localData.skills?.[category] || [])];
+    newSkills[index] = value;
+    updateLocalData('skills', {
+      ...localData.skills,
+      [category]: newSkills
+    });
+  };
+
+  const removeSkill = (index: number) => {
+    const newSkills = (localData.skills?.[category] || []).filter((_: string, i: number) => i !== index);
+    updateLocalData('skills', {
+      ...localData.skills,
+      [category]: newSkills
+    });
+  };
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-lg font-semibold text-white">{title}</h3>
+        <button
+          onClick={addSkill}
+          className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors"
+        >
+          + Add Skill
+        </button>
+      </div>
+      <div className="space-y-2">
+        {(localData.skills?.[category] || []).map((skill: string, index: number) => (
+          <div key={`${category}-${index}`} className="flex items-center space-x-2">
+            <input
+              type="text"
+              value={skill}
+              onChange={(e) => updateSkill(index, e.target.value)}
+              placeholder={placeholder}
+              className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <button
+              onClick={() => removeSkill(index)}
+              className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+              disabled={(localData.skills?.[category] || []).length <= 1}
+            >
+              ✕
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const ColorPicker: React.FC<{ value: string; onChange: (color: string) => void; label: string }> = ({ value, onChange, label }) => (
+  <div className="mb-4">
+    <label className="block text-sm font-medium text-gray-300 mb-2">{label}</label>
+    <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+      <input
+        type="color"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full sm:w-12 h-10 rounded border border-gray-600 cursor-pointer"
+        aria-label={`${label} color picker`}
+      />
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        placeholder="#000000"
+        aria-label={`${label} hex value`}
+      />
+    </div>
+  </div>
+);
+
+const ImageUpload: React.FC<{ 
+  value: string; 
+  section: string; 
+  field: string; 
+  label: string; 
+  path: string; 
+  accept?: string;
+  uploading: boolean;
+  uploadProgress: number;
+  onFileUpload: (file: File, path: string, section: string, field: string) => void;
+}> = ({
+  value, section, field, label, path, accept = "image/*", uploading, uploadProgress, onFileUpload
+}) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [imageUrl, setImageUrl] = useState<string>('');
+
+  // Load image data when value changes
+  React.useEffect(() => {
+    const loadImage = async () => {
+      if (value && value !== imageUrl) {
+        try {
+          // If it's already a data URL, use it directly
+          if (value.startsWith('data:')) {
+            setImageUrl(value);
+          } else {
+            // Otherwise, fetch from database
+            const { getFileURL } = await import('../firebase/storage');
+            const url = await getFileURL(value);
+            setImageUrl(url || '');
+          }
+        } catch (error) {
+          // Silently handle missing files - this is expected when no image is uploaded yet
+          setImageUrl('');
+        }
+      } else if (!value) {
+        setImageUrl('');
+      }
+    };
+
+    loadImage();
+  }, [value]);
+
+  return (
+  <div className="mb-4">
+    <label className="block text-sm font-medium text-gray-300 mb-2">{label}</label>
+    <div className="space-y-3">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={accept}
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) {
+              onFileUpload(file, path, section, field);
+            }
+          }}
+          className="hidden"
+          aria-label={`Upload ${label}`}
+        />
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white rounded-lg transition-colors text-sm font-medium whitespace-nowrap"
+        >
+          {uploading ? 'Uploading...' : 'Upload from Device'}
+        </button>
+        {imageUrl && (
+          <img src={imageUrl} alt="Preview" className="w-12 h-12 sm:w-16 sm:h-16 rounded object-cover border border-gray-600 flex-shrink-0" />
+        )}
+      </div>
+      {uploading && uploadProgress > 0 && (
+        <div className="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
+          <div
+            className={`bg-blue-600 h-full rounded-full transition-all duration-300 ${
+              uploadProgress === 100 ? 'w-full' :
+              uploadProgress >= 90 ? 'w-11/12' :
+              uploadProgress >= 80 ? 'w-10/12' :
+              uploadProgress >= 70 ? 'w-9/12' :
+              uploadProgress >= 60 ? 'w-8/12' :
+              uploadProgress >= 50 ? 'w-7/12' :
+              uploadProgress >= 40 ? 'w-6/12' :
+              uploadProgress >= 30 ? 'w-5/12' :
+              uploadProgress >= 20 ? 'w-4/12' :
+              uploadProgress >= 10 ? 'w-3/12' : 'w-2/12'
+            }`}
+          ></div>
+        </div>
+      )}
+    </div>
+  </div>
+  );
+};
+
+const TextInput: React.FC<{ value: string; onChange: (value: string) => void; label: string; placeholder?: string; multiline?: boolean }> = ({
+  value, onChange, label, placeholder, multiline = false
+}) => (
+  <div className="mb-4">
+    <label className="block text-sm font-medium text-gray-300 mb-2">{label}</label>
+    {multiline ? (
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        rows={4}
+        className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+      />
+    ) : (
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+      />
+    )}
+  </div>
+);
+
+const SelectInput: React.FC<{ value: string; onChange: (value: string) => void; label: string; options: { value: string; label: string }[] }> = ({
+  value, onChange, label, options
+}) => (
+  <div className="mb-4">
+    <label className="block text-sm font-medium text-gray-300 mb-2">{label}</label>
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+      aria-label={label}
+    >
+      {options.map(option => (
+        <option key={option.value} value={option.value}>{option.label}</option>
+      ))}
+    </select>
+  </div>
+);
+
+const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
+  const { data } = useFirebase();
+  const [activeTab, setActiveTab] = useState('hero');
+  const [saving, setSaving] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [localData, setLocalData] = useState<any>({});
+
+  // Individual upload states for each upload component
+  const [heroProfileUploading, setHeroProfileUploading] = useState(false);
+  const [heroBackgroundUploading, setHeroBackgroundUploading] = useState(false);
+  const [aboutImageUploading, setAboutImageUploading] = useState(false);
+  const [resumeCvUploading, setResumeCvUploading] = useState(false);
+  const [projectImageUploading, setProjectImageUploading] = useState(false);
+  const [testimonialImageUploading, setTestimonialImageUploading] = useState(false);
+
+  const [heroProfileProgress, setHeroProfileProgress] = useState(0);
+  const [heroBackgroundProgress, setHeroBackgroundProgress] = useState(0);
+  const [aboutImageProgress, setAboutImageProgress] = useState(0);
+  const [resumeCvProgress, setResumeCvProgress] = useState(0);
+  const [projectImageProgress, setProjectImageProgress] = useState(0);
+  const [testimonialImageProgress, setTestimonialImageProgress] = useState(0);
+
+  // Initialize local data when component mounts or data changes
+  React.useEffect(() => {
+    if (data && Object.keys(data).length > 0) {
+      setLocalData(JSON.parse(JSON.stringify(data)));
+    }
+  }, [data]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      // Save all sections that have changes
+      const sections = ['hero', 'about', 'skills', 'services', 'projects', 'testimonials', 'contact', 'socials', 'theme', 'resume'];
+      for (const section of sections) {
+        if (localData[section]) {
+          await setData(`siteConfig/${section}`, localData[section]);
+        }
+      }
+      setHasUnsavedChanges(false);
+    } catch (error) {
+      console.error('Error saving:', error);
+      alert('Failed to save changes. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updateLocalData = (section: string, newData: any) => {
+    setLocalData((prev: any) => ({
+      ...prev,
+      [section]: { ...prev[section], ...newData }
+    }));
+    setHasUnsavedChanges(true);
+  };
+
+  const handleFileUpload = async (file: File, path: string, section: string, field: string, uploadId: string) => {
+    // Validate file size (max 20MB)
+    const maxSize = 20 * 1024 * 1024; // 20MB
+    if (file.size > maxSize) {
+      alert('File size must be less than 20MB. Please choose a smaller file.');
+      return;
+    }
+
+    // Validate file type
+    if (!file.type.startsWith('image/') && !file.type.includes('pdf')) {
+      alert('Please select a valid image or PDF file.');
+      return;
+    }
+
+    // Set the appropriate uploading state based on uploadId
+    switch (uploadId) {
+      case 'heroProfile':
+        setHeroProfileUploading(true);
+        setHeroProfileProgress(0);
+        break;
+      case 'heroBackground':
+        setHeroBackgroundUploading(true);
+        setHeroBackgroundProgress(0);
+        break;
+      case 'aboutImage':
+        setAboutImageUploading(true);
+        setAboutImageProgress(0);
+        break;
+      case 'resumeCv':
+        setResumeCvUploading(true);
+        setResumeCvProgress(0);
+        break;
+      case 'projectImage':
+        setProjectImageUploading(true);
+        setProjectImageProgress(0);
+        break;
+      case 'testimonialImage':
+        setTestimonialImageUploading(true);
+        setTestimonialImageProgress(0);
+        break;
+    }
+
+    try {
+      // Compress image if it's large and not a PDF
+      let processedFile = file;
+      if (file.type.startsWith('image/') && file.size > 1024 * 1024) { // If larger than 1MB, compress
+        processedFile = await compressImage(file);
+      }
+
+      // Simulate progress for better UX
+      const progressInterval = setInterval(() => {
+        switch (uploadId) {
+          case 'heroProfile':
+            setHeroProfileProgress(prev => Math.min(prev + 10, 90));
+            break;
+          case 'heroBackground':
+            setHeroBackgroundProgress(prev => Math.min(prev + 10, 90));
+            break;
+          case 'aboutImage':
+            setAboutImageProgress(prev => Math.min(prev + 10, 90));
+            break;
+          case 'resumeCv':
+            setResumeCvProgress(prev => Math.min(prev + 10, 90));
+            break;
+          case 'projectImage':
+            setProjectImageProgress(prev => Math.min(prev + 10, 90));
+            break;
+          case 'testimonialImage':
+            setTestimonialImageProgress(prev => Math.min(prev + 10, 90));
+            break;
+        }
+      }, 200);
+
+      const url = await uploadFile(path, processedFile);
+
+      clearInterval(progressInterval);
+
+      // Set progress to 100%
+      switch (uploadId) {
+        case 'heroProfile':
+          setHeroProfileProgress(100);
+          break;
+        case 'heroBackground':
+          setHeroBackgroundProgress(100);
+          break;
+        case 'aboutImage':
+          setAboutImageProgress(100);
+          break;
+        case 'resumeCv':
+          setResumeCvProgress(100);
+          break;
+        case 'projectImage':
+          setProjectImageProgress(100);
+          break;
+        case 'testimonialImage':
+          setTestimonialImageProgress(100);
+          break;
+      }
+
+      // Save to database immediately
+      const sectionData = { ...localData[section], [field]: url };
+      await setData(`siteConfig/${section}`, sectionData);
+
+      // Update local data
+      updateLocalData(section, { [field]: url });
+
+      // Small delay to show 100% progress, then reset
+      setTimeout(() => {
+        switch (uploadId) {
+          case 'heroProfile':
+            setHeroProfileUploading(false);
+            setHeroProfileProgress(0);
+            break;
+          case 'heroBackground':
+            setHeroBackgroundUploading(false);
+            setHeroBackgroundProgress(0);
+            break;
+          case 'aboutImage':
+            setAboutImageUploading(false);
+            setAboutImageProgress(0);
+            break;
+          case 'resumeCv':
+            setResumeCvUploading(false);
+            setResumeCvProgress(0);
+            break;
+          case 'projectImage':
+            setProjectImageUploading(false);
+            setProjectImageProgress(0);
+            break;
+          case 'testimonialImage':
+            setTestimonialImageUploading(false);
+            setTestimonialImageProgress(0);
+            break;
+        }
+      }, 500);
+
+    } catch (error: any) {
+      console.error('Upload error:', error);
+
+      // Provide specific error messages based on error type
+      let errorMessage = 'Upload failed. Please try again.';
+
+      if (error.message?.includes('CORS')) {
+        errorMessage = 'CORS configuration required. Please configure CORS in Firebase Console for localhost domains, or use Chrome with --disable-web-security for development testing.';
+      } else if (error.message?.includes('unauthorized')) {
+        errorMessage = 'Upload not authorized. Please check Firebase Database security rules.';
+      } else if (error.message?.includes('quota')) {
+        errorMessage = 'Database quota exceeded. Please free up space or upgrade your plan.';
+      } else if (error.message?.includes('5MB')) {
+        errorMessage = 'File is too large. Maximum size for database storage is 5MB. Please choose a smaller file.';
+      } else if (error.message?.includes('network')) {
+        errorMessage = 'Network error. Please check your internet connection and try again.';
+      } else if (error.message) {
+        errorMessage = `Upload failed: ${error.message}`;
+      }
+
+      alert(errorMessage);
+      
+      // Reset the appropriate upload states on error
+      switch (uploadId) {
+        case 'heroProfile':
+          setHeroProfileUploading(false);
+          setHeroProfileProgress(0);
+          break;
+        case 'heroBackground':
+          setHeroBackgroundUploading(false);
+          setHeroBackgroundProgress(0);
+          break;
+        case 'aboutImage':
+          setAboutImageUploading(false);
+          setAboutImageProgress(0);
+          break;
+        case 'resumeCv':
+          setResumeCvUploading(false);
+          setResumeCvProgress(0);
+          break;
+        case 'projectImage':
+          setProjectImageUploading(false);
+          setProjectImageProgress(0);
+          break;
+        case 'testimonialImage':
+          setTestimonialImageUploading(false);
+          setTestimonialImageProgress(0);
+          break;
+      }
+    }
+  };
+
+  // Compress image function
+  const compressImage = async (file: File): Promise<File> => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+
+      img.onload = () => {
+        // Calculate new dimensions (max 1200px width/height)
+        const maxSize = 1200;
+        let { width, height } = img;
+
+        if (width > height) {
+          if (width > maxSize) {
+            height = (height * maxSize) / width;
+            width = maxSize;
+          }
+        } else {
+          if (height > maxSize) {
+            width = (width * maxSize) / height;
+            height = maxSize;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        ctx?.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const compressedFile = new File([blob], file.name, {
+              type: 'image/jpeg',
+              lastModified: Date.now(),
+            });
+            resolve(compressedFile);
+          } else {
+            resolve(file); // Fallback to original file
+          }
+        }, 'image/jpeg', 0.8); // 80% quality
+      };
+
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
+  const tabs = [
+    { key: 'hero', label: 'Hero Section', icon: '🚀' },
+    { key: 'about', label: 'About Me', icon: '👤' },
+    { key: 'skills', label: 'Skills', icon: '⚡' },
+    { key: 'services', label: 'Services', icon: '🛠️' },
+    { key: 'projects', label: 'Projects', icon: '💼' },
+    { key: 'testimonials', label: 'Reviews', icon: '💬' },
+    { key: 'contact', label: 'Contact', icon: '📧' },
+    { key: 'socials', label: 'Social Links', icon: '🔗' },
+    { key: 'theme', label: 'Design', icon: '🎨' }
+  ];
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black">
+      {/* Header */}
+      <div className="bg-gray-800/50 backdrop-blur-sm border-b border-gray-700 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="lg:hidden p-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition-colors"
+                aria-label="Toggle sidebar"
+              >
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-sm sm:text-lg">A</span>
+              </div>
+              <div className="hidden sm:block">
+                <h1 className="text-xl sm:text-2xl font-bold text-white">Portfolio Editor</h1>
+                <p className="text-gray-400 text-xs sm:text-sm">Make changes and see them instantly</p>
+              </div>
+            </div>
+            <div className="flex space-x-2 sm:space-x-3">
+              {hasUnsavedChanges && (
+                <div className="flex items-center space-x-2 text-yellow-400 text-sm">
+                  <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
+                  <span>Unsaved changes</span>
+                </div>
+              )}
+              <button
+                onClick={handleSave}
+                disabled={saving || !hasUnsavedChanges}
+                className="px-3 sm:px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white font-medium rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg disabled:transform-none text-xs sm:text-sm"
+              >
+                {saving ? 'Saving...' : 'Save Changes'}
+              </button>
+              <button
+                onClick={() => uploadProvidedFiles()}
+                className="hidden sm:inline-flex px-3 sm:px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg text-xs sm:text-sm"
+              >
+                Upload My Files
+              </button>
+              <button
+                onClick={() => initializeDefaultData()}
+                className="hidden sm:inline-flex px-3 sm:px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg text-xs sm:text-sm"
+              >
+                Reset to Default
+              </button>
+              <button
+                onClick={onLogout}
+                className="px-3 sm:px-4 py-2 bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white font-medium rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg text-xs sm:text-sm"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+          {/* Mobile title */}
+          <div className="sm:hidden mt-3">
+            <h1 className="text-xl font-bold text-white">Portfolio Editor</h1>
+            <p className="text-gray-400 text-sm">Make changes and see them instantly</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Database Storage Notice */}
+      <div className="bg-blue-900/50 border-b border-blue-700">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3">
+          <div className="flex items-center space-x-3">
+            <div className="flex-shrink-0">
+              <svg className="w-5 h-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <p className="text-blue-200 text-sm">
+                <strong>Database Storage:</strong> Files are now stored in Firebase Realtime Database as base64. Max file size: 5MB. No CORS configuration needed!
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
+        <div className="flex gap-4 sm:gap-8">
+          {/* Sidebar */}
+          <div className={`${
+            sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          } lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-40 w-64 lg:w-80 flex-shrink-0 transition-transform duration-300 ease-in-out lg:transition-none`}>
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-gray-700 h-full lg:h-auto overflow-y-auto">
+              <div className="flex items-center justify-between mb-4 lg:hidden">
+                <h3 className="text-lg font-semibold text-white">Edit Sections</h3>
+                <button
+                  onClick={() => setSidebarOpen(false)}
+                  className="p-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition-colors"
+                  aria-label="Close sidebar"
+                >
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <h3 className="hidden lg:block text-lg font-semibold text-white mb-4">Edit Sections</h3>
+              <div className="space-y-2">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.key}
+                    onClick={() => {
+                      setActiveTab(tab.key);
+                      setSidebarOpen(false); // Close sidebar on mobile after selection
+                    }}
+                    className={`w-full flex items-center space-x-3 px-3 sm:px-4 py-3 rounded-lg transition-all duration-200 ${
+                      activeTab === tab.key
+                        ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg'
+                        : 'text-gray-300 hover:bg-gray-700/50 hover:text-white'
+                    }`}
+                  >
+                    <span className="text-lg sm:text-xl">{tab.icon}</span>
+                    <span className="font-medium text-sm sm:text-base">{tab.label}</span>
+                  </button>
+                ))}
+              </div>
+              {/* Mobile upload button */}
+              <div className="mt-6 pt-4 border-t border-gray-700 lg:hidden">
+                <button
+                  onClick={uploadProvidedFiles}
+                  className="w-full px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium rounded-lg transition-all duration-200 text-sm mb-4"
+                >
+                  Upload My Files
+                </button>
+              </div>
+              {/* Mobile reset button */}
+              <div className="mt-6 pt-4 border-t border-gray-700 lg:hidden">
+                <button
+                  onClick={() => initializeDefaultData()}
+                  className="w-full px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium rounded-lg transition-all duration-200 text-sm"
+                >
+                  Reset to Default
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile overlay */}
+          {sidebarOpen && (
+            <div
+              className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
+              onClick={() => setSidebarOpen(false)}
+            />
+          )}
+
+          {/* Main Content */}
+          <div className="flex-1 min-w-0">
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-4 sm:p-6 lg:p-8 border border-gray-700">
+              {activeTab === 'hero' && (
+                <div>
+                  <div className="flex items-center space-x-3 mb-6">
+                    <span className="text-2xl">🚀</span>
+                    <h2 className="text-2xl font-bold text-white">Hero Section</h2>
+                  </div>
+                  <TextInput
+                    label="Main Title"
+                    value={localData.hero?.title || ''}
+                    onChange={(value) => updateLocalData('hero', { title: value })}
+                    placeholder="Hi, I'm John Doe"
+                  />
+                  <TextInput
+                    label="Subtitle"
+                    value={localData.hero?.subtitle || ''}
+                    onChange={(value) => updateLocalData('hero', { subtitle: value })}
+                    placeholder="Full Stack Developer"
+                  />
+                  <TextInput
+                    label="Description"
+                    value={localData.hero?.description || ''}
+                    onChange={(value) => updateLocalData('hero', { description: value })}
+                    placeholder="Tell visitors about yourself"
+                    multiline
+                  />
+                  <TextInput
+                    label="Button Text"
+                    value={localData.hero?.cta || ''}
+                    onChange={(value) => updateLocalData('hero', { cta: value })}
+                    placeholder="View My Work"
+                  />
+                  <ImageUpload
+                    label="Profile Picture"
+                    value={localData.hero?.profileImage || ''}
+                    section="hero"
+                    field="profileImage"
+                    path={`hero/profile_${Date.now()}.jpg`}
+                    uploading={heroProfileUploading}
+                    uploadProgress={heroProfileProgress}
+                    onFileUpload={(file, path, section, field) => handleFileUpload(file, path, section, field, 'heroProfile')}
+                  />
+                  <ImageUpload
+                    label="Background Image (Optional)"
+                    value={localData.hero?.backgroundImage || ''}
+                    section="hero"
+                    field="backgroundImage"
+                    path={`hero/background_${Date.now()}.jpg`}
+                    uploading={heroBackgroundUploading}
+                    uploadProgress={heroBackgroundProgress}
+                    onFileUpload={(file, path, section, field) => handleFileUpload(file, path, section, field, 'heroBackground')}
+                  />
+                </div>
+              )}
+
+              {activeTab === 'about' && (
+                <div>
+                  <div className="flex items-center space-x-3 mb-6">
+                    <span className="text-2xl">👤</span>
+                    <h2 className="text-2xl font-bold text-white">About Me</h2>
+                  </div>
+                  <TextInput
+                    label="Your Name"
+                    value={localData.about?.name || ''}
+                    onChange={(value) => updateLocalData('about', { name: value })}
+                    placeholder="John Doe"
+                  />
+                  <TextInput
+                    label="About You"
+                    value={localData.about?.description || ''}
+                    onChange={(value) => updateLocalData('about', { description: value })}
+                    placeholder="Tell your story"
+                    multiline
+                  />
+                  <ImageUpload
+                    label="Profile Picture"
+                    value={localData.about?.image || ''}
+                    section="about"
+                    field="image"
+                    path={`about/profile_${Date.now()}.jpg`}
+                    uploading={aboutImageUploading}
+                    uploadProgress={aboutImageProgress}
+                    onFileUpload={(file, path, section, field) => handleFileUpload(file, path, section, field, 'aboutImage')}
+                  />
+                  <TextInput
+                    label="Location"
+                    value={localData.about?.location || ''}
+                    onChange={(value) => updateLocalData('about', { location: value })}
+                    placeholder="City, Country"
+                  />
+                  <TextInput
+                    label="Experience"
+                    value={localData.about?.experience || ''}
+                    onChange={(value) => updateLocalData('about', { experience: value })}
+                    placeholder="3+ Years"
+                  />
+                  <SelectInput
+                    label="Availability"
+                    value={localData.about?.availability || 'Open To Work'}
+                    onChange={(value) => updateLocalData('about', { availability: value })}
+                    options={[
+                      { value: 'Open To Work', label: 'Open To Work' },
+                      { value: 'Available', label: 'Available' },
+                      { value: 'Busy', label: 'Busy' },
+                      { value: 'Not Available', label: 'Not Available' }
+                    ]}
+                  />
+                  <TextInput
+                    label="Education"
+                    value={localData.about?.education || ''}
+                    onChange={(value) => updateLocalData('about', { education: value })}
+                    placeholder="Your degree"
+                  />
+                  <ImageUpload
+                    label="CV/Resume (PDF)"
+                    value={localData.resume?.cvUrl || ''}
+                    section="resume"
+                    field="cvUrl"
+                    path={`resume/cv_${Date.now()}.pdf`}
+                    accept="application/pdf"
+                    uploading={resumeCvUploading}
+                    uploadProgress={resumeCvProgress}
+                    onFileUpload={(file, path, section, field) => handleFileUpload(file, path, section, field, 'resumeCv')}
+                  />
+                  <TextInput
+                    label="Resume Section Title"
+                    value={localData.resume?.title || ''}
+                    onChange={(value) => updateLocalData('resume', { ...localData.resume, title: value })}
+                    placeholder="Download My Resume"
+                  />
+                  <TextInput
+                    label="Resume Section Subtitle"
+                    value={localData.resume?.subtitle || ''}
+                    onChange={(value) => updateLocalData('resume', { ...localData.resume, subtitle: value })}
+                    placeholder="Get a copy of my professional CV"
+                  />
+                  <TextInput
+                    label="Resume Section Description"
+                    value={localData.resume?.description || ''}
+                    onChange={(value) => updateLocalData('resume', { ...localData.resume, description: value })}
+                    placeholder="Download my resume to learn more about my experience, skills, and qualifications."
+                    multiline
+                  />
+                  <TextInput
+                    label="Download Button Text"
+                    value={localData.resume?.buttonText || ''}
+                    onChange={(value) => updateLocalData('resume', { ...localData.resume, buttonText: value })}
+                    placeholder="Download CV"
+                  />
+                </div>
+              )}
+
+              {activeTab === 'skills' && (
+                <div>
+                  <div className="flex items-center space-x-3 mb-6">
+                    <span className="text-2xl">⚡</span>
+                    <h2 className="text-2xl font-bold text-white">Skills</h2>
+                  </div>
+                  <div className="space-y-6">
+                    <DynamicSkillsInput
+                      category="frontend"
+                      title="Frontend Skills"
+                      placeholder="React, TypeScript, etc."
+                      localData={localData}
+                      updateLocalData={updateLocalData}
+                    />
+                    <DynamicSkillsInput
+                      category="backend"
+                      title="Backend Skills"
+                      placeholder="Node.js, Python, etc."
+                      localData={localData}
+                      updateLocalData={updateLocalData}
+                    />
+                    <DynamicSkillsInput
+                      category="tools"
+                      title="Tools & Technologies"
+                      placeholder="Git, Docker, etc."
+                      localData={localData}
+                      updateLocalData={updateLocalData}
+                    />
+                    <DynamicSkillsInput
+                      category="languages"
+                      title="Programming Languages"
+                      placeholder="JavaScript, Python, etc."
+                      localData={localData}
+                      updateLocalData={updateLocalData}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'services' && (
+                <div>
+                  <div className="flex items-center space-x-3 mb-6">
+                    <span className="text-2xl">🛠️</span>
+                    <h2 className="text-2xl font-bold text-white">Services</h2>
+                  </div>
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-3">Service 1</h3>
+                      <TextInput
+                        label="Title"
+                        value={localData.services?.[0]?.title || ''}
+                        onChange={(value) => {
+                          const services = [...(localData.services || [])];
+                          services[0] = { ...services[0], title: value };
+                          updateLocalData('services', services);
+                        }}
+                        placeholder="Web Development"
+                      />
+                      <TextInput
+                        label="Description"
+                        value={localData.services?.[0]?.description || ''}
+                        onChange={(value) => {
+                          const services = [...(localData.services || [])];
+                          services[0] = { ...services[0], description: value };
+                          updateLocalData('services', services);
+                        }}
+                        placeholder="Build modern web applications"
+                        multiline
+                      />
+                      <TextInput
+                        label="Icon"
+                        value={localData.services?.[0]?.icon || ''}
+                        onChange={(value) => {
+                          const services = [...(localData.services || [])];
+                          services[0] = { ...services[0], icon: value };
+                          updateLocalData('services', services);
+                        }}
+                        placeholder="💻"
+                      />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-3">Service 2</h3>
+                      <TextInput
+                        label="Title"
+                        value={localData.services?.[1]?.title || ''}
+                        onChange={(value) => {
+                          const services = [...(localData.services || [])];
+                          services[1] = { ...services[1], title: value };
+                          updateLocalData('services', services);
+                        }}
+                        placeholder="Mobile Development"
+                      />
+                      <TextInput
+                        label="Description"
+                        value={localData.services?.[1]?.description || ''}
+                        onChange={(value) => {
+                          const services = [...(localData.services || [])];
+                          services[1] = { ...services[1], description: value };
+                          updateLocalData('services', services);
+                        }}
+                        placeholder="Create native mobile apps"
+                        multiline
+                      />
+                      <TextInput
+                        label="Icon"
+                        value={localData.services?.[1]?.icon || ''}
+                        onChange={(value) => {
+                          const services = [...(localData.services || [])];
+                          services[1] = { ...services[1], icon: value };
+                          updateLocalData('services', services);
+                        }}
+                        placeholder="📱"
+                      />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-3">Service 3</h3>
+                      <TextInput
+                        label="Title"
+                        value={localData.services?.[2]?.title || ''}
+                        onChange={(value) => {
+                          const services = [...(localData.services || [])];
+                          services[2] = { ...services[2], title: value };
+                          updateLocalData('services', services);
+                        }}
+                        placeholder="UI/UX Design"
+                      />
+                      <TextInput
+                        label="Description"
+                        value={localData.services?.[2]?.description || ''}
+                        onChange={(value) => {
+                          const services = [...(localData.services || [])];
+                          services[2] = { ...services[2], description: value };
+                          updateLocalData('services', services);
+                        }}
+                        placeholder="Design beautiful user interfaces"
+                        multiline
+                      />
+                      <TextInput
+                        label="Icon"
+                        value={localData.services?.[2]?.icon || ''}
+                        onChange={(value) => {
+                          const services = [...(localData.services || [])];
+                          services[2] = { ...services[2], icon: value };
+                          updateLocalData('services', services);
+                        }}
+                        placeholder="🎨"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'projects' && (
+                <div>
+                  <div className="flex items-center space-x-3 mb-6">
+                    <span className="text-2xl">💼</span>
+                    <h2 className="text-2xl font-bold text-white">Projects</h2>
+                  </div>
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-3">Project 1</h3>
+                      <TextInput
+                        label="Title"
+                        value={localData.projects?.[0]?.title || ''}
+                        onChange={(value) => {
+                          const projects = [...(localData.projects || [])];
+                          projects[0] = { ...projects[0], title: value };
+                          updateLocalData('projects', projects);
+                        }}
+                        placeholder="E-commerce Platform"
+                      />
+                      <TextInput
+                        label="Description"
+                        value={localData.projects?.[0]?.description || ''}
+                        onChange={(value) => {
+                          const projects = [...(localData.projects || [])];
+                          projects[0] = { ...projects[0], description: value };
+                          updateLocalData('projects', projects);
+                        }}
+                        placeholder="A full-featured online store"
+                        multiline
+                      />
+                      <TextInput
+                        label="Technologies"
+                        value={localData.projects?.[0]?.technologies?.join(', ') || ''}
+                        onChange={(value) => {
+                          const projects = [...(localData.projects || [])];
+                          projects[0] = { ...projects[0], technologies: value.split(',').map(s => s.trim()).filter(s => s) };
+                          updateLocalData('projects', projects);
+                        }}
+                        placeholder="React, Node.js, MongoDB"
+                      />
+                      <TextInput
+                        label="Live URL"
+                        value={localData.projects?.[0]?.liveUrl || ''}
+                        onChange={(value) => {
+                          const projects = [...(localData.projects || [])];
+                          projects[0] = { ...projects[0], liveUrl: value };
+                          updateLocalData('projects', projects);
+                        }}
+                        placeholder="https://example.com"
+                      />
+                      <TextInput
+                        label="GitHub URL"
+                        value={localData.projects?.[0]?.githubUrl || ''}
+                        onChange={(value) => {
+                          const projects = [...(localData.projects || [])];
+                          projects[0] = { ...projects[0], githubUrl: value };
+                          updateLocalData('projects', projects);
+                        }}
+                        placeholder="https://github.com/user/repo"
+                      />
+                      <ImageUpload
+                        label="Project Image"
+                        value={localData.projects?.[0]?.image || ''}
+                        section="projects"
+                        field="0.image"
+                        path={`projects/project1_${Date.now()}.jpg`}
+                        uploading={projectImageUploading}
+                        uploadProgress={projectImageProgress}
+                        onFileUpload={(file, path, section, field) => handleFileUpload(file, path, section, field, 'projectImage')}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'testimonials' && (
+                <div>
+                  <div className="flex items-center space-x-3 mb-6">
+                    <span className="text-2xl">💬</span>
+                    <h2 className="text-2xl font-bold text-white">Client Reviews</h2>
+                  </div>
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-3">Review 1</h3>
+                      <TextInput
+                        label="Client Name"
+                        value={localData.testimonials?.[0]?.name || ''}
+                        onChange={(value) => {
+                          const testimonials = [...(localData.testimonials || [])];
+                          testimonials[0] = { ...testimonials[0], name: value };
+                          updateLocalData('testimonials', testimonials);
+                        }}
+                        placeholder="John Smith"
+                      />
+                      <TextInput
+                        label="Company"
+                        value={localData.testimonials?.[0]?.company || ''}
+                        onChange={(value) => {
+                          const testimonials = [...(localData.testimonials || [])];
+                          testimonials[0] = { ...testimonials[0], company: value };
+                          updateLocalData('testimonials', testimonials);
+                        }}
+                        placeholder="Tech Corp"
+                      />
+                      <TextInput
+                        label="Review"
+                        value={localData.testimonials?.[0]?.review || ''}
+                        onChange={(value) => {
+                          const testimonials = [...(localData.testimonials || [])];
+                          testimonials[0] = { ...testimonials[0], review: value };
+                          updateLocalData('testimonials', testimonials);
+                        }}
+                        placeholder="Amazing work! Highly recommend."
+                        multiline
+                      />
+                      <SelectInput
+                        label="Rating"
+                        value={localData.testimonials?.[0]?.rating?.toString() || '5'}
+                        onChange={(value) => {
+                          const testimonials = [...(localData.testimonials || [])];
+                          testimonials[0] = { ...testimonials[0], rating: parseInt(value) };
+                          updateLocalData('testimonials', testimonials);
+                        }}
+                        options={[
+                          { value: '5', label: '⭐⭐⭐⭐⭐ (5 stars)' },
+                          { value: '4', label: '⭐⭐⭐⭐ (4 stars)' },
+                          { value: '3', label: '⭐⭐⭐ (3 stars)' }
+                        ]}
+                      />
+                      <ImageUpload
+                        label="Client Photo"
+                        value={localData.testimonials?.[0]?.image || ''}
+                        section="testimonials"
+                        field="0.image"
+                        path={`testimonials/client1_${Date.now()}.jpg`}
+                        uploading={testimonialImageUploading}
+                        uploadProgress={testimonialImageProgress}
+                        onFileUpload={(file, path, section, field) => handleFileUpload(file, path, section, field, 'testimonialImage')}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'contact' && (
+                <div>
+                  <div className="flex items-center space-x-3 mb-6">
+                    <span className="text-2xl">📧</span>
+                    <h2 className="text-2xl font-bold text-white">Contact Information</h2>
+                  </div>
+                  <TextInput
+                    label="Email Address"
+                    value={localData.contact?.email || ''}
+                    onChange={(value) => updateLocalData('contact', { ...localData.contact, email: value })}
+                    placeholder="your.email@example.com"
+                  />
+                  <TextInput
+                    label="Phone Number"
+                    value={localData.contact?.phone || ''}
+                    onChange={(value) => updateLocalData('contact', { ...localData.contact, phone: value })}
+                    placeholder="+1 (555) 123-4567"
+                  />
+                  <TextInput
+                    label="Address"
+                    value={localData.contact?.address || ''}
+                    onChange={(value) => updateLocalData('contact', { ...localData.contact, address: value })}
+                    placeholder="City, State, Country"
+                  />
+                  <TextInput
+                    label="Contact Form Title"
+                    value={localData.contact?.title || ''}
+                    onChange={(value) => updateLocalData('contact', { ...localData.contact, title: value })}
+                    placeholder="Get In Touch"
+                  />
+                  <TextInput
+                    label="Contact Form Description"
+                    value={localData.contact?.description || ''}
+                    onChange={(value) => updateLocalData('contact', { ...localData.contact, description: value })}
+                    placeholder="I'd love to hear from you!"
+                    multiline
+                  />
+                </div>
+              )}
+
+              {activeTab === 'socials' && (
+                <div>
+                  <div className="flex items-center space-x-3 mb-6">
+                    <span className="text-2xl">🔗</span>
+                    <h2 className="text-2xl font-bold text-white">Social Links</h2>
+                  </div>
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-3">GitHub</h3>
+                      <TextInput
+                        label="GitHub URL"
+                        value={localData.socials?.github || ''}
+                        onChange={(value) => updateLocalData('socials', { ...localData.socials, github: value })}
+                        placeholder="https://github.com/yourusername"
+                      />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-3">LinkedIn</h3>
+                      <TextInput
+                        label="LinkedIn URL"
+                        value={localData.socials?.linkedin || ''}
+                        onChange={(value) => updateLocalData('socials', { ...localData.socials, linkedin: value })}
+                        placeholder="https://linkedin.com/in/yourprofile"
+                      />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-3">Twitter</h3>
+                      <TextInput
+                        label="Twitter URL"
+                        value={localData.socials?.twitter || ''}
+                        onChange={(value) => updateLocalData('socials', { ...localData.socials, twitter: value })}
+                        placeholder="https://twitter.com/yourusername"
+                      />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-3">Instagram</h3>
+                      <TextInput
+                        label="Instagram URL"
+                        value={localData.socials?.instagram || ''}
+                        onChange={(value) => updateLocalData('socials', { ...localData.socials, instagram: value })}
+                        placeholder="https://instagram.com/yourusername"
+                      />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-3">Custom Link 1</h3>
+                      <TextInput
+                        label="Platform Name"
+                        value={localData.socials?.custom1?.name || ''}
+                        onChange={(value) => updateLocalData('socials', {
+                          ...localData.socials,
+                          custom1: { ...localData.socials?.custom1, name: value }
+                        })}
+                        placeholder="Dribbble"
+                      />
+                      <TextInput
+                        label="URL"
+                        value={localData.socials?.custom1?.url || ''}
+                        onChange={(value) => updateLocalData('socials', {
+                          ...localData.socials,
+                          custom1: { ...localData.socials?.custom1, url: value }
+                        })}
+                        placeholder="https://dribbble.com/yourusername"
+                      />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-3">Custom Link 2</h3>
+                      <TextInput
+                        label="Platform Name"
+                        value={localData.socials?.custom2?.name || ''}
+                        onChange={(value) => updateLocalData('socials', {
+                          ...localData.socials,
+                          custom2: { ...localData.socials?.custom2, name: value }
+                        })}
+                        placeholder="Behance"
+                      />
+                      <TextInput
+                        label="URL"
+                        value={localData.socials?.custom2?.url || ''}
+                        onChange={(value) => updateLocalData('socials', {
+                          ...localData.socials,
+                          custom2: { ...localData.socials?.custom2, url: value }
+                        })}
+                        placeholder="https://behance.net/yourusername"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'theme' && (
+                <div>
+                  <div className="flex items-center space-x-3 mb-6">
+                    <span className="text-2xl">🎨</span>
+                    <h2 className="text-2xl font-bold text-white">Design & Colors</h2>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                    <ColorPicker
+                      label="Primary Color"
+                      value={localData.theme?.primaryColor || '#6366f1'}
+                      onChange={(color) => updateLocalData('theme', { ...localData.theme, primaryColor: color })}
+                    />
+                    <ColorPicker
+                      label="Secondary Color"
+                      value={localData.theme?.secondaryColor || '#8b5cf6'}
+                      onChange={(color) => updateLocalData('theme', { ...localData.theme, secondaryColor: color })}
+                    />
+                    <ColorPicker
+                      label="Accent Color"
+                      value={localData.theme?.accentColor || '#06b6d4'}
+                      onChange={(color) => updateLocalData('theme', { ...localData.theme, accentColor: color })}
+                    />
+                    <ColorPicker
+                      label="Background Color"
+                      value={localData.theme?.backgroundColor || '#111827'}
+                      onChange={(color) => updateLocalData('theme', { ...localData.theme, backgroundColor: color })}
+                    />
+                  </div>
+                  <div className="mt-6 space-y-4">
+                    <SelectInput
+                      label="Font Style"
+                      value={localData.theme?.fontFamily || 'Inter, sans-serif'}
+                      onChange={(value) => updateLocalData('theme', { ...localData.theme, fontFamily: value })}
+                      options={[
+                        { value: 'Inter, sans-serif', label: 'Inter (Modern)' },
+                        { value: 'Roboto, sans-serif', label: 'Roboto (Clean)' },
+                        { value: 'Open Sans, sans-serif', label: 'Open Sans (Friendly)' },
+                        { value: 'Poppins, sans-serif', label: 'Poppins (Bold)' }
+                      ]}
+                    />
+                    <SelectInput
+                      label="Border Style"
+                      value={localData.theme?.borderRadius || '0.5rem'}
+                      onChange={(value) => updateLocalData('theme', { ...localData.theme, borderRadius: value })}
+                      options={[
+                        { value: '0rem', label: 'Sharp Corners' },
+                        { value: '0.25rem', label: 'Small Rounded' },
+                        { value: '0.5rem', label: 'Medium Rounded' },
+                        { value: '1rem', label: 'Very Rounded' }
+                      ]}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {saving && (
+                <div className="mt-6 p-4 bg-blue-500/20 border border-blue-500/50 rounded-lg">
+                  <div className="flex items-center space-x-2 text-blue-400">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-400"></div>
+                    <span>Saving changes...</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default AdminDashboard;
