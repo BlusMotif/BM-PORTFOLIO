@@ -6,13 +6,13 @@ export const uploadProvidedFiles = async () => {
   try {
     console.log('Starting upload of provided files...');
 
-    // Read the image file
-    const imageResponse = await fetch('/IMG_4943.jpg');
+    // Read the profile image file
+    const imageResponse = await fetch('/profile.jpg');
     if (!imageResponse.ok) {
       throw new Error('Could not read image file');
     }
     const imageBlob = await imageResponse.blob();
-    const imageFile = new File([imageBlob], 'IMG_4943.jpg', { type: 'image/jpeg' });
+    const imageFile = new File([imageBlob], 'profile.jpg', { type: 'image/jpeg' });
 
     // Upload the image
     console.log('Uploading profile image...');
