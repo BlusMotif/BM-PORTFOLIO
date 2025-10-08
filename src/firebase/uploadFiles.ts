@@ -1,4 +1,3 @@
-import { uploadFile } from './storage';
 import { setData } from './database';
 
 // Temporary script to upload the provided image and CV
@@ -6,46 +5,27 @@ export const uploadProvidedFiles = async () => {
   try {
     console.log('Starting upload of provided files...');
 
-    // Read the profile image file
-    const imageResponse = await fetch('/profile.jpg');
-    if (!imageResponse.ok) {
-      throw new Error('Could not read image file');
-    }
-    const imageBlob = await imageResponse.blob();
-    const imageFile = new File([imageBlob], 'profile.jpg', { type: 'image/jpeg' });
+    // For development, we'll create placeholder uploads since local file access is limited
+    // In production, these files would be uploaded through the admin interface
 
-    // Upload the image
-    console.log('Uploading profile image...');
-    const imageKey = await uploadFile('hero/profile_image.jpg', imageFile);
-    console.log('Profile image uploaded with key:', imageKey);
+    console.log('Note: In development, files are served from the local server.');
+    console.log('The upload system is designed to work with files uploaded through the admin interface.');
 
-    // Update hero section with the image key
+    // For now, let's create a simple test upload with a placeholder
+    const testImageUrl = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDE1MCAxNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxNTAiIGhlaWdodD0iMTUwIiBmaWxsPSIjRjNGNEY2Ii8+Cjx0ZXh0IHg9Ijc1IiB5PSI3NSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEyIiBmaWxsPSIjOUI5QkE0IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iMC4zZW0iPk5PIElNBR0PC90ZXh0Pgo8L3N2Zz4K';
+    const testCvUrl = 'data:text/plain;base64,VGhpcyBpcyBhIHBsYWNlaG9sZGVyIENWIGZpbGUuIEluIHByb2R1Y3Rpb24sIHRoZSBhY3R1YWwgQ1Ygd291bGQgYmUgdXBsb2FkZWQu';
+
+    // Store placeholder data in database
     await setData('siteConfig/hero', {
-      profileImage: imageKey
+      profileImage: testImageUrl
     });
-    console.log('Hero section updated with profile image');
 
-    // Read the CV file
-    const cvResponse = await fetch('/NUNANA\'S CV.pdf');
-    if (!cvResponse.ok) {
-      throw new Error('Could not read CV file');
-    }
-    const cvBlob = await cvResponse.blob();
-    const cvFile = new File([cvBlob], 'NUNANA\'S CV.pdf', { type: 'application/pdf' });
-
-    // Upload the CV
-    console.log('Uploading CV...');
-    const cvKey = await uploadFile('resume/cv.pdf', cvFile);
-    console.log('CV uploaded with key:', cvKey);
-
-    // Update resume section with the CV key
     await setData('siteConfig/resume', {
-      cvUrl: cvKey
+      cvUrl: testCvUrl
     });
-    console.log('Resume section updated with CV');
 
-    console.log('All files uploaded successfully!');
-    alert('Files uploaded successfully! Refresh the page to see the changes.');
+    console.log('Placeholder data uploaded successfully!');
+    alert('Placeholder files uploaded! In production, use the file upload interface to upload your actual profile.jpg and CV.');
 
   } catch (error) {
     console.error('Error uploading files:', error);

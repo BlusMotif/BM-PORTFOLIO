@@ -44,8 +44,7 @@ firestore-debug.log
 GoogleCloudSDKInstaller.exe
 
 # Personal files (should not be committed)
-profile.jpg
-NUNANA'S CV.pdf
+# profile.jpg and NUNANA'S CV.pdf are now included for deployment
 
 # CORS configuration files
 cors.json
