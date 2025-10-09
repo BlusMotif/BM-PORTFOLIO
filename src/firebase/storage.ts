@@ -21,8 +21,8 @@ export const uploadFile = async (path: string, file: File): Promise<string> => {
     const sanitizedPath = path.replace(/\./g, '_').replace(/\//g, '_');
 
     if (file.size <= CHUNK_SIZE) {
-      // Small file - store directly
-      const fileRef = push(ref(database, `files/${sanitizedPath}`));
+      // Small file - store directly using sanitized path as key
+      const fileRef = ref(database, `files/${sanitizedPath}`);
       const fileData = {
         name: file.name,
         type: file.type,
@@ -34,7 +34,7 @@ export const uploadFile = async (path: string, file: File): Promise<string> => {
         chunkIndex: 0
       };
       await set(fileRef, fileData);
-      return fileRef.key!;
+      return sanitizedPath;
     } else {
       // Large file - split into chunks
       const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
@@ -82,7 +82,7 @@ export const getFileURL = async (fileKey: string): Promise<string | null> => {
     // Check if it's a chunked file (ends with _chunked)
     if (fileKey.endsWith('_chunked')) {
       const baseKey = fileKey.replace('_chunked', '');
-      const chunkedRef = ref(database, `files/${baseKey}_chunked`);
+      const chunkedRef = ref(database, `files/${baseKey}`);
       const chunkedSnapshot = await get(chunkedRef);
 
       if (chunkedSnapshot.exists()) {

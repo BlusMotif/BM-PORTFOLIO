@@ -10,6 +10,9 @@ const ImageLoader: React.FC<{ src: string; alt: string; className: string; style
   const [imageUrl, setImageUrl] = useState<string>('');
 
   useEffect(() => {
+    // Clear the image URL first to force re-loading
+    setImageUrl('');
+
     const loadImage = async () => {
       if (!src) {
         // Use fallback placeholder for empty src
@@ -63,6 +66,7 @@ const Hero: React.FC<HeroProps> = ({ data }) => {
       {data.hero?.backgroundImage && (
         <div className="absolute inset-0">
           <ImageLoader
+            key={data.hero.backgroundImage}
             src={data.hero.backgroundImage}
             alt="Background"
             className="w-full h-full object-cover opacity-20"
@@ -77,11 +81,12 @@ const Hero: React.FC<HeroProps> = ({ data }) => {
           transition={{ duration: 0.8 }}
         >
           <ImageLoader
+            key={data.hero?.profileImage}
             src={data.hero?.profileImage || data.about?.image}
             alt="Profile"
-            className="w-32 h-32 rounded-full mx-auto mb-8 border-4 border-purple-400 shadow-lg"
+            className="w-32 h-32 rounded-full mx-auto mb-8 border-4 border-purple-400 shadow-lg object-cover"
           />
-          <h1 className="text-5xl md:text-7xl font-bold mb-4">
+          <h1 className="text-3xl md:text-5xl font-bold mb-4">
             {data.hero?.title || "Hi, I'm Blu Motif"}
           </h1>
           <p className="text-xl md:text-2xl text-gray-300 mb-8">

@@ -6,25 +6,26 @@ interface SkillsProps {
 }
 
 const Skills: React.FC<SkillsProps> = ({ data }) => {
-  const skillCategories = [
+  // Use dynamic categories from Firebase, fallback to default if not available
+  const skillCategories = data.skills?.categories || [
     {
       title: 'Frontend Development',
-      skills: data.skills?.frontend || ['React', 'TypeScript', 'Tailwind CSS', 'Next.js'],
+      skills: ['React', 'TypeScript', 'Tailwind CSS', 'Next.js'],
       icon: '💻'
     },
     {
       title: 'Backend Development',
-      skills: data.skills?.backend || ['Node.js', 'Express', 'MongoDB', 'PostgreSQL'],
+      skills: ['Node.js', 'Express', 'MongoDB', 'PostgreSQL'],
       icon: '⚙️'
     },
     {
       title: 'Tools & Technologies',
-      skills: data.skills?.tools || ['Git', 'Docker', 'Firebase', 'AWS'],
+      skills: ['Git', 'Docker', 'Firebase', 'AWS'],
       icon: '🛠️'
     },
     {
       title: 'Languages',
-      skills: data.skills?.languages || ['JavaScript', 'Python', 'TypeScript', 'SQL'],
+      skills: ['JavaScript', 'Python', 'TypeScript', 'SQL'],
       icon: '💬'
     }
   ];
@@ -46,7 +47,7 @@ const Skills: React.FC<SkillsProps> = ({ data }) => {
         </motion.div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {skillCategories.map((category, index) => (
+          {skillCategories.map((category: any, index: number) => (
             <motion.div
               key={index}
               className="bg-gray-800 p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300"

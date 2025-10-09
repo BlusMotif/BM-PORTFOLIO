@@ -9,17 +9,22 @@ interface ProjectsProps {
 const Projects: React.FC<ProjectsProps> = ({ data }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
-  const projects = data.projects ? Object.values(data.projects) : [];
+  const projects = Array.isArray(data.projects) ? data.projects : [];
 
-  const filteredProjects = projects.filter((project: any) =>
-    project.searchIndex?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredProjects = projects.filter((project: any) => {
+    const searchText = `${project.title} ${project.description} ${project.technologies?.join(' ')}`.toLowerCase();
+    return searchText.includes(searchTerm.toLowerCase());
+  });
 
   const ImageLoader: React.FC<{ src: string; alt: string; className?: string }> = ({ src, alt, className }) => {
     const [imageSrc, setImageSrc] = useState<string>('');
     const [loading, setLoading] = useState(true);
 
     React.useEffect(() => {
+      // Clear the image source first to force re-loading
+      setImageSrc('');
+      setLoading(true);
+
       const loadImage = async () => {
         try {
           if (!src) {
@@ -100,6 +105,7 @@ const Projects: React.FC<ProjectsProps> = ({ data }) => {
             >
               <div className="relative">
                 <ImageLoader
+                  key={project.image}
                   src={project.image}
                   alt={project.title}
                   className="w-full h-48 object-cover"
@@ -122,9 +128,9 @@ const Projects: React.FC<ProjectsProps> = ({ data }) => {
                   ))}
                 </div>
                 <div className="flex space-x-4">
-                  {project.github && (
+                  {project.githubUrl && (
                     <a
-                      href={project.github}
+                      href={project.githubUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-purple-400 hover:text-purple-300 transition-colors"
@@ -132,9 +138,9 @@ const Projects: React.FC<ProjectsProps> = ({ data }) => {
                       Code
                     </a>
                   )}
-                  {project.demo && (
+                  {project.liveUrl && (
                     <a
-                      href={project.demo}
+                      href={project.liveUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-purple-400 hover:text-purple-300 transition-colors"

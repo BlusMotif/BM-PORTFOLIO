@@ -2,13 +2,39 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
+/* Reset all margins and padding */
+* {
   margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden; /* Prevent horizontal scroll */
+}
+
+body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  padding-top: 4rem; /* Account for fixed navbar */
+  line-height: 1.6;
+}
+
+/* Override body padding for admin page */
+.admin-page {
+  padding-top: 0 !important;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
 }
 
 code {

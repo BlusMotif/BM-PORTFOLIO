@@ -11,6 +11,10 @@ const Testimonials: React.FC = () => {
     const [loading, setLoading] = React.useState(true);
 
     React.useEffect(() => {
+      // Clear the image source first to force re-loading
+      setImageSrc('');
+      setLoading(true);
+
       const loadImage = async () => {
         try {
           if (!src) {
@@ -81,9 +85,10 @@ const Testimonials: React.FC = () => {
             >
               <div className="flex items-center mb-4">
                 <ImageLoader
+                  key={testimonial.image}
                   src={testimonial.image}
                   alt={testimonial.name}
-                  className="w-12 h-12 rounded-full mr-4"
+                  className="w-12 h-12 rounded-full mr-4 object-cover"
                 />
                 <div>
                   <h4 className="text-lg font-semibold text-white">{testimonial.name}</h4>

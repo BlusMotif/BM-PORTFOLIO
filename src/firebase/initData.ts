@@ -37,15 +37,40 @@ export const initializeDefaultData = async () => {
       location: 'Your City, Country',
       experience: '3+ Years',
       availability: 'Open To Work',
-      education: 'Bachelor\'s in Computer Science'
+      education: 'Bachelor\'s in Computer Science',
+      details: [
+        { title: 'Full Name', description: 'Blu Motif' },
+        { title: 'Location', description: 'Your City, Country' },
+        { title: 'Experience', description: '3+ Years' },
+        { title: 'Available', description: 'Open To Work' },
+        { title: 'Education', description: 'Bachelor\'s in Computer Science' }
+      ]
     });
 
     // Skills section
     await setData('siteConfig/skills', {
-      frontend: ['React', 'TypeScript', 'Next.js', 'Tailwind CSS', 'Vue.js'],
-      backend: ['Node.js', 'Express', 'Python', 'PostgreSQL', 'MongoDB'],
-      tools: ['Git', 'Docker', 'AWS', 'Firebase', 'Figma'],
-      languages: ['JavaScript', 'TypeScript', 'Python', 'SQL', 'HTML/CSS']
+      categories: [
+        {
+          title: 'Frontend Development',
+          skills: ['React', 'TypeScript', 'Next.js', 'Tailwind CSS', 'Vue.js'],
+          icon: '💻'
+        },
+        {
+          title: 'Backend Development',
+          skills: ['Node.js', 'Express', 'Python', 'PostgreSQL', 'MongoDB'],
+          icon: '⚙️'
+        },
+        {
+          title: 'Tools & Technologies',
+          skills: ['Git', 'Docker', 'AWS', 'Firebase', 'Figma'],
+          icon: '🛠️'
+        },
+        {
+          title: 'Programming Languages',
+          skills: ['JavaScript', 'TypeScript', 'Python', 'SQL', 'HTML/CSS'],
+          icon: '💬'
+        }
+      ]
     });
 
     // Services section

@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { useFirebase } from '../context/FirebaseContext';
 import { setData } from '../firebase/database';
 import { uploadFile } from '../firebase/storage';
@@ -10,73 +11,6 @@ interface AdminDashboardProps {
 }
 
 // Component definitions moved outside to prevent re-creation on every render
-const DynamicSkillsInput: React.FC<{ 
-  category: string; 
-  title: string; 
-  placeholder: string;
-  localData: any;
-  updateLocalData: (section: string, newData: any) => void;
-}> = ({ category, title, placeholder, localData, updateLocalData }) => {
-  const addSkill = () => {
-    const newSkills = [...(localData.skills?.[category] || []), ''];
-    updateLocalData('skills', {
-      ...localData.skills,
-      [category]: newSkills
-    });
-  };
-
-  const updateSkill = (index: number, value: string) => {
-    const newSkills = [...(localData.skills?.[category] || [])];
-    newSkills[index] = value;
-    updateLocalData('skills', {
-      ...localData.skills,
-      [category]: newSkills
-    });
-  };
-
-  const removeSkill = (index: number) => {
-    const newSkills = (localData.skills?.[category] || []).filter((_: string, i: number) => i !== index);
-    updateLocalData('skills', {
-      ...localData.skills,
-      [category]: newSkills
-    });
-  };
-
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-lg font-semibold text-white">{title}</h3>
-        <button
-          onClick={addSkill}
-          className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors"
-        >
-          + Add Skill
-        </button>
-      </div>
-      <div className="space-y-2">
-        {(localData.skills?.[category] || []).map((skill: string, index: number) => (
-          <div key={`${category}-${index}`} className="flex items-center space-x-2">
-            <input
-              type="text"
-              value={skill}
-              onChange={(e) => updateSkill(index, e.target.value)}
-              placeholder={placeholder}
-              className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-            <button
-              onClick={() => removeSkill(index)}
-              className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
-              disabled={(localData.skills?.[category] || []).length <= 1}
-            >
-              ✕
-            </button>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
 const ColorPicker: React.FC<{ value: string; onChange: (color: string) => void; label: string }> = ({ value, onChange, label }) => (
   <div className="mb-4">
     <label className="block text-sm font-medium text-gray-300 mb-2">{label}</label>
@@ -252,6 +186,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
   const [resumeCvUploading, setResumeCvUploading] = useState(false);
   const [projectImageUploading, setProjectImageUploading] = useState(false);
   const [testimonialImageUploading, setTestimonialImageUploading] = useState(false);
+  const [logoUploading, setLogoUploading] = useState(false);
 
   const [heroProfileProgress, setHeroProfileProgress] = useState(0);
   const [heroBackgroundProgress, setHeroBackgroundProgress] = useState(0);
@@ -259,11 +194,56 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
   const [resumeCvProgress, setResumeCvProgress] = useState(0);
   const [projectImageProgress, setProjectImageProgress] = useState(0);
   const [testimonialImageProgress, setTestimonialImageProgress] = useState(0);
+  const [logoProgress, setLogoProgress] = useState(0);
 
   // Initialize local data when component mounts or data changes
   React.useEffect(() => {
     if (data && Object.keys(data).length > 0) {
-      setLocalData(JSON.parse(JSON.stringify(data)));
+      const processedData = JSON.parse(JSON.stringify(data));
+
+      // Ensure about section has details array for backward compatibility
+      if (processedData.about && !processedData.about.details) {
+        processedData.about.details = [
+          { title: 'Full Name', description: processedData.about.name || 'Blu Motif' },
+          { title: 'Location', description: processedData.about.location || 'Your Location' },
+          { title: 'Experience', description: processedData.about.experience || 'X+ Years' },
+          { title: 'Available', description: processedData.about.availability || 'Open To Work' },
+          { title: 'Education', description: processedData.about.education || 'Your Degree' }
+        ];
+      }
+
+      // Ensure skills section has categories array for backward compatibility
+      if (processedData.skills && !processedData.skills.categories) {
+        processedData.skills.categories = [
+          {
+            title: 'Frontend Development',
+            skills: processedData.skills.frontend || ['React', 'TypeScript', 'Tailwind CSS', 'Next.js'],
+            icon: '💻'
+          },
+          {
+            title: 'Backend Development',
+            skills: processedData.skills.backend || ['Node.js', 'Express', 'MongoDB', 'PostgreSQL'],
+            icon: '⚙️'
+          },
+          {
+            title: 'Tools & Technologies',
+            skills: processedData.skills.tools || ['Git', 'Docker', 'Firebase', 'AWS'],
+            icon: '🛠️'
+          },
+          {
+            title: 'Programming Languages',
+            skills: processedData.skills.languages || ['JavaScript', 'Python', 'TypeScript', 'SQL'],
+            icon: '💬'
+          }
+        ];
+      }
+
+      // Ensure projects is always an array
+      if (!processedData.projects || !Array.isArray(processedData.projects)) {
+        processedData.projects = [];
+      }
+
+      setLocalData(processedData);
     }
   }, [data]);
 
@@ -271,7 +251,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     setSaving(true);
     try {
       // Save all sections that have changes
-      const sections = ['hero', 'about', 'skills', 'services', 'projects', 'testimonials', 'contact', 'socials', 'theme', 'resume'];
+      const sections = ['hero', 'about', 'skills', 'services', 'projects', 'testimonials', 'contact', 'socials', 'navigation', 'theme', 'resume'];
       for (const section of sections) {
         if (localData[section]) {
           await setData(`siteConfig/${section}`, localData[section]);
@@ -334,6 +314,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
         setTestimonialImageUploading(true);
         setTestimonialImageProgress(0);
         break;
+      case 'logo':
+        setLogoUploading(true);
+        setLogoProgress(0);
+        break;
     }
 
     try {
@@ -394,11 +378,37 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
       }
 
       // Save to database immediately
-      const sectionData = { ...localData[section], [field]: url };
+      let sectionData;
+      if ((section === 'projects' && field.startsWith('project_') && field.endsWith('_image')) ||
+          (section === 'testimonials' && field.startsWith('testimonial_') && field.endsWith('_image'))) {
+        // Handle array-based image uploads specially
+        const itemIndex = parseInt(field.split('_')[1]);
+        const items = [...(localData[section] || [])];
+        if (items[itemIndex]) {
+          items[itemIndex] = { ...items[itemIndex], image: url };
+        }
+        sectionData = items;
+      } else {
+        sectionData = { ...localData[section], [field]: url };
+      }
       await setData(`siteConfig/${section}`, sectionData);
 
       // Update local data
-      updateLocalData(section, { [field]: url });
+      if ((section === 'projects' && field.startsWith('project_') && field.endsWith('_image')) ||
+          (section === 'testimonials' && field.startsWith('testimonial_') && field.endsWith('_image'))) {
+        const itemIndex = parseInt(field.split('_')[1]);
+        const items = [...(localData[section] || [])];
+        if (items[itemIndex]) {
+          items[itemIndex] = { ...items[itemIndex], image: url };
+        }
+        setLocalData((prev: any) => ({
+          ...prev,
+          [section]: items
+        }));
+        setHasUnsavedChanges(true);
+      } else {
+        updateLocalData(section, { [field]: url });
+      }
 
       // Small delay to show 100% progress, then reset
       setTimeout(() => {
@@ -426,6 +436,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
           case 'testimonialImage':
             setTestimonialImageUploading(false);
             setTestimonialImageProgress(0);
+            break;
+          case 'logo':
+            setLogoUploading(false);
+            setLogoProgress(0);
             break;
         }
       }, 500);
@@ -477,6 +491,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
         case 'testimonialImage':
           setTestimonialImageUploading(false);
           setTestimonialImageProgress(0);
+          break;
+        case 'logo':
+          setLogoUploading(false);
+          setLogoProgress(0);
           break;
       }
     }
@@ -537,15 +555,21 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     { key: 'testimonials', label: 'Reviews', icon: '💬' },
     { key: 'contact', label: 'Contact', icon: '📧' },
     { key: 'socials', label: 'Social Links', icon: '🔗' },
+    { key: 'navigation', label: 'Navigation', icon: '🧭' },
     { key: 'theme', label: 'Design', icon: '🎨' }
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black admin-page">
       {/* Header */}
-      <div className="bg-gray-800/50 backdrop-blur-sm border-b border-gray-700 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
-          <div className="flex justify-between items-center">
+      <motion.nav
+        className="fixed top-0 w-full bg-gray-900/95 backdrop-blur-md z-50 border-b border-gray-700 shadow-lg"
+        initial={{ y: -100 }}
+        animate={{ y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-3">
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -560,7 +584,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                 <span className="text-white font-bold text-sm sm:text-lg">A</span>
               </div>
               <div className="hidden sm:block">
-                <h1 className="text-xl sm:text-2xl font-bold text-white">Portfolio Editor</h1>
+                <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">BlusMotif Admin Portfolio Editor</h1>
                 <p className="text-gray-400 text-xs sm:text-sm">Make changes and see them instantly</p>
               </div>
             </div>
@@ -600,11 +624,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
           </div>
           {/* Mobile title */}
           <div className="sm:hidden mt-3">
-            <h1 className="text-xl font-bold text-white">Portfolio Editor</h1>
+            <h1 className="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">BlusMotif Admin Portfolio Editor</h1>
             <p className="text-gray-400 text-sm">Make changes and see them instantly</p>
           </div>
         </div>
-      </div>
+      </motion.nav>
 
       {/* Database Storage Notice */}
       <div className="bg-blue-900/50 border-b border-blue-700">
@@ -807,6 +831,67 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                     onChange={(value) => updateLocalData('about', { education: value })}
                     placeholder="Your degree"
                   />
+
+                  {/* Dynamic Details Management */}
+                  <div className="mt-8">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold text-white">Additional Details</h3>
+                      <button
+                        onClick={() => {
+                          const newDetails = [...(localData.about?.details || []), { title: '', description: '', icon: '⭐' }];
+                          updateLocalData('about', { details: newDetails });
+                        }}
+                        className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors flex items-center space-x-2"
+                      >
+                        <span>+</span>
+                        <span>Add Detail</span>
+                      </button>
+                    </div>
+                    <div className="space-y-4">
+                      {(localData.about?.details || []).map((detail: any, index: number) => (
+                        <div key={index} className="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                          <div className="flex items-center justify-between mb-3">
+                            <h4 className="text-white font-medium">Detail #{index + 1}</h4>
+                            <button
+                              onClick={() => {
+                                const newDetails = (localData.about?.details || []).filter((_: any, i: number) => i !== index);
+                                updateLocalData('about', { details: newDetails });
+                              }}
+                              className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm rounded transition-colors"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <TextInput
+                              label="Title"
+                              value={detail.title || ''}
+                              onChange={(value) => {
+                                const newDetails = [...(localData.about?.details || [])];
+                                newDetails[index] = { ...newDetails[index], title: value };
+                                updateLocalData('about', { details: newDetails });
+                              }}
+                              placeholder="e.g., Languages"
+                            />
+                            <TextInput
+                              label="Description"
+                              value={detail.description || ''}
+                              onChange={(value) => {
+                                const newDetails = [...(localData.about?.details || [])];
+                                newDetails[index] = { ...newDetails[index], description: value };
+                                updateLocalData('about', { details: newDetails });
+                              }}
+                              placeholder="e.g., English, Spanish"
+                            />
+                          </div>
+                          <div className="mt-2 text-sm text-gray-400">
+                            Icons are automatically assigned based on the title
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
                   <ImageUpload
                     label="CV/Resume (PDF)"
                     value={localData.resume?.cvUrl || ''}
@@ -852,35 +937,116 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                     <span className="text-2xl">⚡</span>
                     <h2 className="text-2xl font-bold text-white">Skills</h2>
                   </div>
+
+                  {/* Add New Category Button */}
+                  <div className="mb-6">
+                    <button
+                      onClick={() => {
+                        const newCategories = [...(localData.skills?.categories || []), {
+                          title: '',
+                          skills: [''],
+                          icon: '⭐'
+                        }];
+                        updateLocalData('skills', { categories: newCategories });
+                      }}
+                      className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors flex items-center space-x-2"
+                    >
+                      <span>+</span>
+                      <span>Add Skill Category</span>
+                    </button>
+                  </div>
+
+                  {/* Dynamic Skill Categories */}
                   <div className="space-y-6">
-                    <DynamicSkillsInput
-                      category="frontend"
-                      title="Frontend Skills"
-                      placeholder="React, TypeScript, etc."
-                      localData={localData}
-                      updateLocalData={updateLocalData}
-                    />
-                    <DynamicSkillsInput
-                      category="backend"
-                      title="Backend Skills"
-                      placeholder="Node.js, Python, etc."
-                      localData={localData}
-                      updateLocalData={updateLocalData}
-                    />
-                    <DynamicSkillsInput
-                      category="tools"
-                      title="Tools & Technologies"
-                      placeholder="Git, Docker, etc."
-                      localData={localData}
-                      updateLocalData={updateLocalData}
-                    />
-                    <DynamicSkillsInput
-                      category="languages"
-                      title="Programming Languages"
-                      placeholder="JavaScript, Python, etc."
-                      localData={localData}
-                      updateLocalData={updateLocalData}
-                    />
+                    {(localData.skills?.categories || []).map((category: any, categoryIndex: number) => (
+                      <div key={categoryIndex} className="bg-gray-800 p-6 rounded-lg border border-gray-600">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-lg font-semibold text-white">Category #{categoryIndex + 1}</h3>
+                          <button
+                            onClick={() => {
+                              const newCategories = (localData.skills?.categories || []).filter((_: any, i: number) => i !== categoryIndex);
+                              updateLocalData('skills', { categories: newCategories });
+                            }}
+                            className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm rounded transition-colors"
+                          >
+                            Remove Category
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                          <TextInput
+                            label="Category Title"
+                            value={category.title || ''}
+                            onChange={(value) => {
+                              const newCategories = [...(localData.skills?.categories || [])];
+                              newCategories[categoryIndex] = { ...newCategories[categoryIndex], title: value };
+                              updateLocalData('skills', { categories: newCategories });
+                            }}
+                            placeholder="e.g., Frontend Development"
+                          />
+                          <TextInput
+                            label="Icon (Emoji)"
+                            value={category.icon || ''}
+                            onChange={(value) => {
+                              const newCategories = [...(localData.skills?.categories || [])];
+                              newCategories[categoryIndex] = { ...newCategories[categoryIndex], icon: value };
+                              updateLocalData('skills', { categories: newCategories });
+                            }}
+                            placeholder="💻"
+                          />
+                        </div>
+
+                        {/* Skills within this category */}
+                        <div>
+                          <div className="flex items-center justify-between mb-3">
+                            <h4 className="text-white font-medium">Skills</h4>
+                            <button
+                              onClick={() => {
+                                const newCategories = [...(localData.skills?.categories || [])];
+                                const newSkills = [...(newCategories[categoryIndex].skills || []), ''];
+                                newCategories[categoryIndex] = { ...newCategories[categoryIndex], skills: newSkills };
+                                updateLocalData('skills', { categories: newCategories });
+                              }}
+                              className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
+                            >
+                              + Add Skill
+                            </button>
+                          </div>
+
+                          <div className="space-y-2">
+                            {(category.skills || []).map((skill: string, skillIndex: number) => (
+                              <div key={skillIndex} className="flex items-center space-x-2">
+                                <input
+                                  type="text"
+                                  value={skill}
+                                  onChange={(e) => {
+                                    const newCategories = [...(localData.skills?.categories || [])];
+                                    const newSkills = [...(newCategories[categoryIndex].skills || [])];
+                                    newSkills[skillIndex] = e.target.value;
+                                    newCategories[categoryIndex] = { ...newCategories[categoryIndex], skills: newSkills };
+                                    updateLocalData('skills', { categories: newCategories });
+                                  }}
+                                  placeholder="e.g., React"
+                                  className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                />
+                                <button
+                                  onClick={() => {
+                                    const newCategories = [...(localData.skills?.categories || [])];
+                                    const newSkills = (newCategories[categoryIndex].skills || []).filter((_: string, i: number) => i !== skillIndex);
+                                    newCategories[categoryIndex] = { ...newCategories[categoryIndex], skills: newSkills };
+                                    updateLocalData('skills', { categories: newCategories });
+                                  }}
+                                  className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                                  disabled={(category.skills || []).length <= 1}
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
@@ -1000,75 +1166,145 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
 
               {activeTab === 'projects' && (
                 <div>
-                  <div className="flex items-center space-x-3 mb-6">
-                    <span className="text-2xl">💼</span>
-                    <h2 className="text-2xl font-bold text-white">Projects</h2>
-                  </div>
-                  <div className="space-y-6">
-                    <div>
-                      <h3 className="text-lg font-semibold text-white mb-3">Project 1</h3>
-                      <TextInput
-                        label="Title"
-                        value={localData.projects?.[0]?.title || ''}
-                        onChange={(value) => {
-                          const projects = [...(localData.projects || [])];
-                          projects[0] = { ...projects[0], title: value };
-                          updateLocalData('projects', projects);
-                        }}
-                        placeholder="E-commerce Platform"
-                      />
-                      <TextInput
-                        label="Description"
-                        value={localData.projects?.[0]?.description || ''}
-                        onChange={(value) => {
-                          const projects = [...(localData.projects || [])];
-                          projects[0] = { ...projects[0], description: value };
-                          updateLocalData('projects', projects);
-                        }}
-                        placeholder="A full-featured online store"
-                        multiline
-                      />
-                      <TextInput
-                        label="Technologies"
-                        value={localData.projects?.[0]?.technologies?.join(', ') || ''}
-                        onChange={(value) => {
-                          const projects = [...(localData.projects || [])];
-                          projects[0] = { ...projects[0], technologies: value.split(',').map(s => s.trim()).filter(s => s) };
-                          updateLocalData('projects', projects);
-                        }}
-                        placeholder="React, Node.js, MongoDB"
-                      />
-                      <TextInput
-                        label="Live URL"
-                        value={localData.projects?.[0]?.liveUrl || ''}
-                        onChange={(value) => {
-                          const projects = [...(localData.projects || [])];
-                          projects[0] = { ...projects[0], liveUrl: value };
-                          updateLocalData('projects', projects);
-                        }}
-                        placeholder="https://example.com"
-                      />
-                      <TextInput
-                        label="GitHub URL"
-                        value={localData.projects?.[0]?.githubUrl || ''}
-                        onChange={(value) => {
-                          const projects = [...(localData.projects || [])];
-                          projects[0] = { ...projects[0], githubUrl: value };
-                          updateLocalData('projects', projects);
-                        }}
-                        placeholder="https://github.com/user/repo"
-                      />
-                      <ImageUpload
-                        label="Project Image"
-                        value={localData.projects?.[0]?.image || ''}
-                        section="projects"
-                        field="0.image"
-                        path={`projects/project1_${Date.now()}.jpg`}
-                        uploading={projectImageUploading}
-                        uploadProgress={projectImageProgress}
-                        onFileUpload={(file, path, section, field) => handleFileUpload(file, path, section, field, 'projectImage')}
-                      />
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center space-x-3">
+                      <span className="text-2xl">💼</span>
+                      <h2 className="text-2xl font-bold text-white">Projects</h2>
                     </div>
+                    <button
+                      onClick={() => {
+                        const currentProjects = Array.isArray(localData.projects) ? localData.projects : [];
+                        const newProject = {
+                          title: '',
+                          description: '',
+                          technologies: [],
+                          liveUrl: '',
+                          githubUrl: '',
+                          image: ''
+                        };
+                        const updatedProjects = [...currentProjects, newProject];
+                        setLocalData((prev: any) => ({
+                          ...prev,
+                          projects: updatedProjects
+                        }));
+                        setHasUnsavedChanges(true);
+                      }}
+                      className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors flex items-center space-x-2"
+                    >
+                      <span>+</span>
+                      <span>Add Project</span>
+                    </button>
+                  </div>
+                  <div className="space-y-8">
+                    {(Array.isArray(localData.projects) ? localData.projects : []).map((project: any, index: number) => (
+                      <div key={index} className="bg-gray-800 p-6 rounded-lg border border-gray-700">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-lg font-semibold text-white">Project {index + 1}</h3>
+                          <button
+                            onClick={() => {
+                              const projects = [...(localData.projects || [])];
+                              projects.splice(index, 1);
+                              setLocalData((prev: any) => ({
+                                ...prev,
+                                projects: projects
+                              }));
+                              setHasUnsavedChanges(true);
+                            }}
+                            className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg transition-colors"
+                            disabled={(localData.projects || []).length <= 1}
+                          >
+                            ✕ Remove
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <TextInput
+                            label="Title"
+                            value={project.title || ''}
+                            onChange={(value) => {
+                              const projects = [...(localData.projects || [])];
+                              projects[index] = { ...projects[index], title: value };
+                              setLocalData((prev: any) => ({
+                                ...prev,
+                                projects: projects
+                              }));
+                              setHasUnsavedChanges(true);
+                            }}
+                            placeholder="E-commerce Platform"
+                          />
+                          <TextInput
+                            label="Technologies"
+                            value={project.technologies?.join(', ') || ''}
+                            onChange={(value) => {
+                              const projects = [...(localData.projects || [])];
+                              projects[index] = { ...projects[index], technologies: value.split(',').map((s: string) => s.trim()).filter((s: string) => s) };
+                              setLocalData((prev: any) => ({
+                                ...prev,
+                                projects: projects
+                              }));
+                              setHasUnsavedChanges(true);
+                            }}
+                            placeholder="React, Node.js, MongoDB"
+                          />
+                          <TextInput
+                            label="Live URL"
+                            value={project.liveUrl || ''}
+                            onChange={(value) => {
+                              const projects = [...(localData.projects || [])];
+                              projects[index] = { ...projects[index], liveUrl: value };
+                              setLocalData((prev: any) => ({
+                                ...prev,
+                                projects: projects
+                              }));
+                              setHasUnsavedChanges(true);
+                            }}
+                            placeholder="https://example.com"
+                          />
+                          <TextInput
+                            label="GitHub URL"
+                            value={project.githubUrl || ''}
+                            onChange={(value) => {
+                              const projects = [...(localData.projects || [])];
+                              projects[index] = { ...projects[index], githubUrl: value };
+                              setLocalData((prev: any) => ({
+                                ...prev,
+                                projects: projects
+                              }));
+                              setHasUnsavedChanges(true);
+                            }}
+                            placeholder="https://github.com/user/repo"
+                          />
+                        </div>
+                        <div className="mt-4">
+                          <TextInput
+                            label="Description"
+                            value={project.description || ''}
+                            onChange={(value) => {
+                              const projects = [...(localData.projects || [])];
+                              projects[index] = { ...projects[index], description: value };
+                              setLocalData((prev: any) => ({
+                                ...prev,
+                                projects: projects
+                              }));
+                              setHasUnsavedChanges(true);
+                            }}
+                            placeholder="A full-featured online store"
+                            multiline
+                          />
+                        </div>
+                        <div className="mt-4">
+                          <ImageUpload
+                            label="Project Image"
+                            value={project.image || ''}
+                            section="projects"
+                            field={`project_${index}_image`}
+                            path={`projects/project${index + 1}_${Date.now()}.jpg`}
+                            uploading={projectImageUploading}
+                            uploadProgress={projectImageProgress}
+                            onFileUpload={(file, path, section, field) => handleFileUpload(file, path, section, field, 'projectImage')}
+                          />
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
@@ -1131,7 +1367,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                         label="Client Photo"
                         value={localData.testimonials?.[0]?.image || ''}
                         section="testimonials"
-                        field="0.image"
+                        field="testimonial_0_image"
                         path={`testimonials/client1_${Date.now()}.jpg`}
                         uploading={testimonialImageUploading}
                         uploadProgress={testimonialImageProgress}
@@ -1266,6 +1502,102 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                         })}
                         placeholder="https://behance.net/yourusername"
                       />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'navigation' && (
+                <div>
+                  <div className="flex items-center space-x-3 mb-6">
+                    <span className="text-2xl">🧭</span>
+                    <h2 className="text-2xl font-bold text-white">Navigation & Branding</h2>
+                  </div>
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-3">Site Branding</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <TextInput
+                          label="Site Title"
+                          value={localData.navigation?.siteTitle || ''}
+                          onChange={(value) => updateLocalData('navigation', { ...localData.navigation, siteTitle: value })}
+                          placeholder="Your Name or Brand"
+                        />
+                        <TextInput
+                          label="Site Subtitle (Optional)"
+                          value={localData.navigation?.siteSubtitle || ''}
+                          onChange={(value) => updateLocalData('navigation', { ...localData.navigation, siteSubtitle: value })}
+                          placeholder="Your tagline or profession"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-3">Logo & Images</h3>
+                      <ImageUpload
+                        label="Site Logo"
+                        value={localData.navigation?.logo || ''}
+                        section="navigation"
+                        field="logo"
+                        path={`navigation/logo_${Date.now()}.png`}
+                        uploading={logoUploading}
+                        uploadProgress={logoProgress}
+                        onFileUpload={(file, path, section, field) => handleFileUpload(file, path, section, field, 'logo')}
+                      />
+                      <p className="text-sm text-gray-400 mt-2">
+                        Upload a logo image (PNG, JPG, or SVG recommended). The logo will appear in the navigation bar.
+                      </p>
+                    </div>
+
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-3">Navigation Menu</h3>
+                      <div className="space-y-3">
+                        {(localData.navigation?.menuItems || []).map((item: any, index: number) => (
+                          <div key={index} className="flex items-center space-x-3 p-3 bg-gray-800 rounded-lg">
+                            <div className="flex-1 grid grid-cols-2 gap-3">
+                              <TextInput
+                                label="Label"
+                                value={item.label || ''}
+                                onChange={(value) => {
+                                  const menuItems = [...(localData.navigation?.menuItems || [])];
+                                  menuItems[index] = { ...menuItems[index], label: value };
+                                  updateLocalData('navigation', { ...localData.navigation, menuItems });
+                                }}
+                                placeholder="Menu Item"
+                              />
+                              <TextInput
+                                label="Section ID"
+                                value={item.id || ''}
+                                onChange={(value) => {
+                                  const menuItems = [...(localData.navigation?.menuItems || [])];
+                                  menuItems[index] = { ...menuItems[index], id: value };
+                                  updateLocalData('navigation', { ...localData.navigation, menuItems });
+                                }}
+                                placeholder="section-id"
+                              />
+                            </div>
+                            <button
+                              onClick={() => {
+                                const menuItems = (localData.navigation?.menuItems || []).filter((_: any, i: number) => i !== index);
+                                updateLocalData('navigation', { ...localData.navigation, menuItems });
+                              }}
+                              className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg transition-colors"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          onClick={() => {
+                            const menuItems = [...(localData.navigation?.menuItems || []), { label: '', id: '' }];
+                            updateLocalData('navigation', { ...localData.navigation, menuItems });
+                          }}
+                          className="w-full py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors flex items-center justify-center space-x-2"
+                        >
+                          <span>+</span>
+                          <span>Add Menu Item</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
