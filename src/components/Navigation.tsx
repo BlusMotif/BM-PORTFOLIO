@@ -153,7 +153,7 @@ const Navigation: React.FC<NavigationProps> = ({ activeSection }) => {
               onClick={() => setIsMenuOpen(false)}
             />
             <motion.div
-              className="md:hidden bg-gray-900/95 backdrop-blur-md border-t border-gray-700 absolute top-full left-0 right-0 shadow-xl z-50"
+              className="md:hidden bg-gray-900/98 backdrop-blur-md border-t border-gray-700 absolute top-full left-0 right-0 shadow-xl z-50"
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
