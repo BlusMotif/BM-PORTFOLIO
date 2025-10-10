@@ -310,29 +310,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
         processedData.projects = [];
       }
 
-      // Ensure socials section has proper object structure for backward compatibility
-      if (processedData.socials) {
-        const platforms = ['github', 'linkedin', 'twitter', 'instagram', 'facebook', 'youtube', 'discord', 'tiktok', 'medium'];
-        platforms.forEach(platform => {
-          if (processedData.socials[platform]) {
-            // If it's just a string, convert to object
-            if (typeof processedData.socials[platform] === 'string') {
-              processedData.socials[platform] = {
-                url: processedData.socials[platform],
-                label: platform.charAt(0).toUpperCase() + platform.slice(1)
-              };
-            }
-            // Ensure it has both url and label properties
-            else if (!processedData.socials[platform].url) {
-              processedData.socials[platform] = {
-                url: '',
-                label: processedData.socials[platform].label || platform.charAt(0).toUpperCase() + platform.slice(1)
-              };
-            }
-          }
-        });
-      }
-
       setLocalData(processedData);
     }
   }, [data]);
@@ -341,7 +318,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     setSaving(true);
     try {
       // Save all sections that have changes
-      const sections = ['hero', 'about', 'skills', 'services', 'projects', 'testimonials', 'contact', 'socials', 'navigation', 'theme', 'resume'];
+      const sections = ['hero', 'about', 'skills', 'services', 'projects', 'testimonials', 'contact', 'navigation', 'theme', 'socials', 'resume'];
       for (const section of sections) {
         if (localData[section]) {
           await setData(`siteConfig/${section}`, localData[section]);
@@ -644,9 +621,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     { key: 'projects', label: 'Projects', icon: '💼' },
     { key: 'testimonials', label: 'Reviews', icon: '💬' },
     { key: 'contact', label: 'Contact', icon: '📧' },
-    { key: 'socials', label: 'Social Links', icon: '🔗' },
     { key: 'navigation', label: 'Navigation', icon: '🧭' },
-    { key: 'theme', label: 'Design', icon: '🎨' }
+    { key: 'theme', label: 'Design', icon: '🎨' },
+    { key: 'socials', label: 'Social Links', icon: '🔗' }
   ];
 
   return (
@@ -1524,141 +1501,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                 </div>
               )}
 
-              {activeTab === 'socials' && (
-                <div>
-                  <div className="flex items-center space-x-3 mb-6">
-                    <div className="flex-shrink-0">
-                      {renderTabIcon('🔗')}
-                    </div>
-                    <h2 className="text-2xl font-bold text-white">Social Links</h2>
-                  </div>
-                  <div className="space-y-6">
-                    <div>
-                      <h3 className="text-lg font-semibold text-white mb-3">GitHub</h3>
-                      <TextInput
-                        label="GitHub URL"
-                        value={localData.socials?.github?.url || ''}
-                        onChange={(value) => updateLocalData('socials', { ...localData.socials, github: { url: value, label: 'GitHub' } })}
-                        placeholder="https://github.com/yourusername"
-                      />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-white mb-3">LinkedIn</h3>
-                      <TextInput
-                        label="LinkedIn URL"
-                        value={localData.socials?.linkedin?.url || ''}
-                        onChange={(value) => updateLocalData('socials', { ...localData.socials, linkedin: { url: value, label: 'LinkedIn' } })}
-                        placeholder="https://linkedin.com/in/yourprofile"
-                      />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-white mb-3">Twitter</h3>
-                      <TextInput
-                        label="Twitter URL"
-                        value={localData.socials?.twitter?.url || ''}
-                        onChange={(value) => updateLocalData('socials', { ...localData.socials, twitter: { url: value, label: 'Twitter' } })}
-                        placeholder="https://twitter.com/yourusername"
-                      />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-white mb-3">Instagram</h3>
-                      <TextInput
-                        label="Instagram URL"
-                        value={localData.socials?.instagram?.url || ''}
-                        onChange={(value) => updateLocalData('socials', { ...localData.socials, instagram: { url: value, label: 'Instagram' } })}
-                        placeholder="https://instagram.com/yourusername"
-                      />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-white mb-3">Facebook</h3>
-                      <TextInput
-                        label="Facebook URL"
-                        value={localData.socials?.facebook?.url || ''}
-                        onChange={(value) => updateLocalData('socials', { ...localData.socials, facebook: { url: value, label: 'Facebook' } })}
-                        placeholder="https://facebook.com/yourprofile"
-                      />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-white mb-3">YouTube</h3>
-                      <TextInput
-                        label="YouTube URL"
-                        value={localData.socials?.youtube?.url || ''}
-                        onChange={(value) => updateLocalData('socials', { ...localData.socials, youtube: { url: value, label: 'YouTube' } })}
-                        placeholder="https://youtube.com/@yourchannel"
-                      />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-white mb-3">Discord</h3>
-                      <TextInput
-                        label="Discord Server Invite"
-                        value={localData.socials?.discord?.url || ''}
-                        onChange={(value) => updateLocalData('socials', { ...localData.socials, discord: { url: value, label: 'Discord' } })}
-                        placeholder="https://discord.gg/yourserver"
-                      />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-white mb-3">TikTok</h3>
-                      <TextInput
-                        label="TikTok URL"
-                        value={localData.socials?.tiktok?.url || ''}
-                        onChange={(value) => updateLocalData('socials', { ...localData.socials, tiktok: { url: value, label: 'TikTok' } })}
-                        placeholder="https://tiktok.com/@yourusername"
-                      />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-white mb-3">Medium</h3>
-                      <TextInput
-                        label="Medium URL"
-                        value={localData.socials?.medium?.url || ''}
-                        onChange={(value) => updateLocalData('socials', { ...localData.socials, medium: { url: value, label: 'Medium' } })}
-                        placeholder="https://medium.com/@yourusername"
-                      />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-white mb-3">Custom Link 1</h3>
-                      <TextInput
-                        label="Platform Name"
-                        value={localData.socials?.custom1?.name || ''}
-                        onChange={(value) => updateLocalData('socials', {
-                          ...localData.socials,
-                          custom1: { ...localData.socials?.custom1, name: value }
-                        })}
-                        placeholder="Dribbble"
-                      />
-                      <TextInput
-                        label="URL"
-                        value={localData.socials?.custom1?.url || ''}
-                        onChange={(value) => updateLocalData('socials', {
-                          ...localData.socials,
-                          custom1: { ...localData.socials?.custom1, url: value }
-                        })}
-                        placeholder="https://dribbble.com/yourusername"
-                      />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-white mb-3">Custom Link 2</h3>
-                      <TextInput
-                        label="Platform Name"
-                        value={localData.socials?.custom2?.name || ''}
-                        onChange={(value) => updateLocalData('socials', {
-                          ...localData.socials,
-                          custom2: { ...localData.socials?.custom2, name: value }
-                        })}
-                        placeholder="Behance"
-                      />
-                      <TextInput
-                        label="URL"
-                        value={localData.socials?.custom2?.url || ''}
-                        onChange={(value) => updateLocalData('socials', {
-                          ...localData.socials,
-                          custom2: { ...localData.socials?.custom2, url: value }
-                        })}
-                        placeholder="https://behance.net/yourusername"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
+
 
               {activeTab === 'navigation' && (
                 <div>
@@ -1811,6 +1654,111 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                         { value: '1rem', label: 'Very Rounded' }
                       ]}
                     />
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'socials' && (
+                <div>
+                  <div className="flex items-center space-x-3 mb-6">
+                    <div className="flex-shrink-0">
+                      {renderTabIcon('🔗')}
+                    </div>
+                    <h2 className="text-2xl font-bold text-white">Social Media Links</h2>
+                  </div>
+
+                  <div className="space-y-6">
+                    {/* Display Settings */}
+                    <div className="bg-gray-800/50 p-6 rounded-lg border border-gray-700">
+                      <h3 className="text-lg font-semibold text-white mb-4">Display Settings</h3>
+                      <div className="flex items-center space-x-3">
+                        <input
+                          type="checkbox"
+                          id="showSocialLinks"
+                          checked={localData.footer?.showSocialLinks || false}
+                          onChange={(e) => updateLocalData('footer', { ...localData.footer, showSocialLinks: e.target.checked })}
+                          className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
+                        />
+                        <label htmlFor="showSocialLinks" className="text-gray-300">
+                          Show social links in footer
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Social Platforms */}
+                    <div className="bg-gray-800/50 p-6 rounded-lg border border-gray-700">
+                      <h3 className="text-lg font-semibold text-white mb-4">Social Platforms</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {[
+                          { key: 'github', label: 'GitHub', color: '#333', icon: 'github' },
+                          { key: 'linkedin', label: 'LinkedIn', color: '#0077b5', icon: 'linkedin' },
+                          { key: 'instagram', label: 'Instagram', color: '#E4405F', icon: 'instagram' },
+                          { key: 'facebook', label: 'Facebook', color: '#1877F2', icon: 'facebook' },
+                          { key: 'twitter', label: 'Twitter', color: '#1DA1F2', icon: 'twitter' },
+                          { key: 'youtube', label: 'YouTube', color: '#FF0000', icon: 'youtube' },
+                          { key: 'discord', label: 'Discord', color: '#5865F2', icon: 'discord' },
+                          { key: 'tiktok', label: 'TikTok', color: '#000000', icon: 'tiktok' },
+                          { key: 'medium', label: 'Medium', color: '#000000', icon: 'medium' }
+                        ].map((platform) => (
+                          <div key={platform.key} className="bg-gray-700/50 p-4 rounded-lg border border-gray-600">
+                            <div className="flex items-center space-x-3 mb-3">
+                              <div
+                                className="w-8 h-8 rounded-full flex items-center justify-center"
+                                style={{ backgroundColor: platform.color }}
+                              >
+                                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                  {platform.icon === 'github' && (
+                                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                                  )}
+                                  {platform.icon === 'linkedin' && (
+                                    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                                  )}
+                                  {platform.icon === 'instagram' && (
+                                    <path d="M12.017 0C8.396 0 7.996.014 6.797.067 5.609.12 4.782.283 4.086.547c-.713.27-1.32.637-1.92 1.237C1.467 2.384 1.1 2.99.83 3.703c-.264.706-.427 1.533-.48 2.721C.3 7.623.286 8.023.286 11.644c0 3.621.014 4.021.067 5.22.053 1.199.218 2.026.482 2.722.27.713.637 1.32 1.237 1.92.6.6 1.207.967 1.92 1.237.706.264 1.533.427 2.721.48 1.199.053 1.599.067 5.22.067 3.621 0 4.021-.014 5.22-.067 1.199-.053 2.026-.218 2.722-.482.713-.27 1.32-.637 1.92-1.237.6-.6.967-1.207 1.237-1.92.264-.706.427-1.533.48-2.721.053-1.199.067-1.599.067-5.22 0-3.621-.014-4.021-.067-5.22-.053-1.199-.218-2.026-.482-2.722-.27-.713-.637-1.32-1.237-1.92-.6-.6-1.207-.967-1.92-1.237C15.231.283 14.404.12 13.216.067 12.017.014 11.617 0 8.017 0h4zM11.994 2.158c3.508 0 6.276 2.768 6.276 6.276s-2.768 6.276-6.276 6.276-6.276-2.768-6.276-6.276 2.768-6.276 6.276-6.276zm0 10.412c2.258 0 4.086-1.828 4.086-4.086s-1.828-4.086-4.086-4.086-4.086 1.828-4.086 4.086 1.828 4.086 4.086 4.086zm6.23-11.766c-.825 0-1.492.667-1.492 1.492s.667 1.492 1.492 1.492 1.492-.667 1.492-1.492-.667-1.492-1.492-1.492z"/>
+                                  )}
+                                  {platform.icon === 'facebook' && (
+                                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                                  )}
+                                  {platform.icon === 'twitter' && (
+                                    <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+                                  )}
+                                  {platform.icon === 'youtube' && (
+                                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                                  )}
+                                  {platform.icon === 'discord' && (
+                                    <path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419-.0189 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/>
+                                  )}
+                                  {platform.icon === 'tiktok' && (
+                                    <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/>
+                                  )}
+                                  {platform.icon === 'medium' && (
+                                    <path d="M13.54 12a6.8 6.8 0 01-6.77 6.82A6.8 6.8 0 010 12a6.8 6.8 0 016.77-6.82A6.8 6.8 0 0113.54 12zM20.96 12c0 3.54-1.51 6.42-3.38 6.42-1.87 0-3.39-2.88-3.39-6.42s1.52-6.42 3.39-6.42 3.38 2.88 3.38 6.42M24 12c0 3.17-.53 5.75-1.19 5.75-.66 0-1.19-2.58-1.19-5.75s.53-5.75 1.19-5.75C23.47 6.25 24 8.83 24 12z"/>
+                                  )}
+                                </svg>
+                              </div>
+                              <span className="text-white font-medium">{platform.label}</span>
+                            </div>
+                            <input
+                              type="url"
+                              placeholder={`Enter ${platform.label} URL`}
+                              value={localData.socials?.[platform.key]?.url || ''}
+                              onChange={(e) => {
+                                const currentSocials = localData.socials || {};
+                                updateLocalData('socials', {
+                                  ...currentSocials,
+                                  [platform.key]: {
+                                    ...currentSocials[platform.key],
+                                    url: e.target.value,
+                                    label: platform.label
+                                  }
+                                });
+                              }}
+                              className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
