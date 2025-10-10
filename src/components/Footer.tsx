@@ -58,7 +58,8 @@ const Footer: React.FC = () => {
             {Object.entries(data.socials).map(([platform, socialData]: [string, any]) => {
               // Handle both object format {url: string, label: string} and string format
               const url = typeof socialData === 'string' ? socialData : socialData?.url;
-              if (!url) return null;
+              // Only render if URL exists and is not empty
+              if (!url || url.trim() === '') return null;
 
               const getPlatformColor = (platform: string) => {
                 const colors: { [key: string]: string } = {

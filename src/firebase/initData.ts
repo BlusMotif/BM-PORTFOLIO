@@ -153,7 +153,7 @@ export const initializeDefaultData = async () => {
       subtitle: 'Let\'s work together on your next project',
       email: 'your.email@example.com',
       phone: '+1 (555) 123-4567',
-      location: 'Your City, Country',
+      address: 'Your City, Country',
       formEnabled: true,
       showMap: false
     });
@@ -162,9 +162,7 @@ export const initializeDefaultData = async () => {
     await setData('siteConfig/socials', {
       github: { url: 'https://github.com/yourusername', label: 'GitHub' },
       linkedin: { url: 'https://linkedin.com/in/yourprofile', label: 'LinkedIn' },
-      twitter: { url: 'https://twitter.com/yourhandle', label: 'Twitter' },
-      instagram: { url: '', label: 'Instagram' },
-      youtube: { url: '', label: 'YouTube' }
+      twitter: { url: 'https://twitter.com/yourhandle', label: 'Twitter' }
     });
 
     // Footer section

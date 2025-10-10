@@ -70,7 +70,7 @@ const Contact: React.FC<ContactProps> = ({ data }) => {
     },
     {
       label: 'Location',
-      value: data.contact?.location || 'Your City, Country',
+      value: data.contact?.address || 'Your City, Country',
       icon: '📍'
     }
   ];
@@ -119,7 +119,8 @@ const Contact: React.FC<ContactProps> = ({ data }) => {
                 {data.socials && Object.entries(data.socials).map(([key, value]: [string, any]) => {
                   // Handle both object format {url: string, label: string} and string format
                   const url = typeof value === 'string' ? value : value?.url;
-                  if (!url) return null;
+                  // Only render if URL exists and is not empty
+                  if (!url || url.trim() === '') return null;
 
                   const getPlatformColor = (platform: string) => {
                     const colors: { [key: string]: string } = {
