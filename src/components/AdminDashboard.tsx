@@ -310,6 +310,29 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
         processedData.projects = [];
       }
 
+      // Ensure socials section has proper object structure for backward compatibility
+      if (processedData.socials) {
+        const platforms = ['github', 'linkedin', 'twitter', 'instagram', 'facebook', 'youtube', 'discord', 'tiktok', 'medium'];
+        platforms.forEach(platform => {
+          if (processedData.socials[platform]) {
+            // If it's just a string, convert to object
+            if (typeof processedData.socials[platform] === 'string') {
+              processedData.socials[platform] = {
+                url: processedData.socials[platform],
+                label: platform.charAt(0).toUpperCase() + platform.slice(1)
+              };
+            }
+            // Ensure it has both url and label properties
+            else if (!processedData.socials[platform].url) {
+              processedData.socials[platform] = {
+                url: '',
+                label: processedData.socials[platform].label || platform.charAt(0).toUpperCase() + platform.slice(1)
+              };
+            }
+          }
+        });
+      }
+
       setLocalData(processedData);
     }
   }, [data]);
@@ -1514,8 +1537,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                       <h3 className="text-lg font-semibold text-white mb-3">GitHub</h3>
                       <TextInput
                         label="GitHub URL"
-                        value={localData.socials?.github || ''}
-                        onChange={(value) => updateLocalData('socials', { ...localData.socials, github: value })}
+                        value={localData.socials?.github?.url || ''}
+                        onChange={(value) => updateLocalData('socials', { ...localData.socials, github: { url: value, label: 'GitHub' } })}
                         placeholder="https://github.com/yourusername"
                       />
                     </div>
@@ -1523,8 +1546,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                       <h3 className="text-lg font-semibold text-white mb-3">LinkedIn</h3>
                       <TextInput
                         label="LinkedIn URL"
-                        value={localData.socials?.linkedin || ''}
-                        onChange={(value) => updateLocalData('socials', { ...localData.socials, linkedin: value })}
+                        value={localData.socials?.linkedin?.url || ''}
+                        onChange={(value) => updateLocalData('socials', { ...localData.socials, linkedin: { url: value, label: 'LinkedIn' } })}
                         placeholder="https://linkedin.com/in/yourprofile"
                       />
                     </div>
@@ -1532,8 +1555,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                       <h3 className="text-lg font-semibold text-white mb-3">Twitter</h3>
                       <TextInput
                         label="Twitter URL"
-                        value={localData.socials?.twitter || ''}
-                        onChange={(value) => updateLocalData('socials', { ...localData.socials, twitter: value })}
+                        value={localData.socials?.twitter?.url || ''}
+                        onChange={(value) => updateLocalData('socials', { ...localData.socials, twitter: { url: value, label: 'Twitter' } })}
                         placeholder="https://twitter.com/yourusername"
                       />
                     </div>
@@ -1541,8 +1564,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                       <h3 className="text-lg font-semibold text-white mb-3">Instagram</h3>
                       <TextInput
                         label="Instagram URL"
-                        value={localData.socials?.instagram || ''}
-                        onChange={(value) => updateLocalData('socials', { ...localData.socials, instagram: value })}
+                        value={localData.socials?.instagram?.url || ''}
+                        onChange={(value) => updateLocalData('socials', { ...localData.socials, instagram: { url: value, label: 'Instagram' } })}
                         placeholder="https://instagram.com/yourusername"
                       />
                     </div>
@@ -1550,8 +1573,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                       <h3 className="text-lg font-semibold text-white mb-3">Facebook</h3>
                       <TextInput
                         label="Facebook URL"
-                        value={localData.socials?.facebook || ''}
-                        onChange={(value) => updateLocalData('socials', { ...localData.socials, facebook: value })}
+                        value={localData.socials?.facebook?.url || ''}
+                        onChange={(value) => updateLocalData('socials', { ...localData.socials, facebook: { url: value, label: 'Facebook' } })}
                         placeholder="https://facebook.com/yourprofile"
                       />
                     </div>
@@ -1559,8 +1582,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                       <h3 className="text-lg font-semibold text-white mb-3">YouTube</h3>
                       <TextInput
                         label="YouTube URL"
-                        value={localData.socials?.youtube || ''}
-                        onChange={(value) => updateLocalData('socials', { ...localData.socials, youtube: value })}
+                        value={localData.socials?.youtube?.url || ''}
+                        onChange={(value) => updateLocalData('socials', { ...localData.socials, youtube: { url: value, label: 'YouTube' } })}
                         placeholder="https://youtube.com/@yourchannel"
                       />
                     </div>
@@ -1568,8 +1591,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                       <h3 className="text-lg font-semibold text-white mb-3">Discord</h3>
                       <TextInput
                         label="Discord Server Invite"
-                        value={localData.socials?.discord || ''}
-                        onChange={(value) => updateLocalData('socials', { ...localData.socials, discord: value })}
+                        value={localData.socials?.discord?.url || ''}
+                        onChange={(value) => updateLocalData('socials', { ...localData.socials, discord: { url: value, label: 'Discord' } })}
                         placeholder="https://discord.gg/yourserver"
                       />
                     </div>
@@ -1577,8 +1600,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                       <h3 className="text-lg font-semibold text-white mb-3">TikTok</h3>
                       <TextInput
                         label="TikTok URL"
-                        value={localData.socials?.tiktok || ''}
-                        onChange={(value) => updateLocalData('socials', { ...localData.socials, tiktok: value })}
+                        value={localData.socials?.tiktok?.url || ''}
+                        onChange={(value) => updateLocalData('socials', { ...localData.socials, tiktok: { url: value, label: 'TikTok' } })}
                         placeholder="https://tiktok.com/@yourusername"
                       />
                     </div>
@@ -1586,8 +1609,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                       <h3 className="text-lg font-semibold text-white mb-3">Medium</h3>
                       <TextInput
                         label="Medium URL"
-                        value={localData.socials?.medium || ''}
-                        onChange={(value) => updateLocalData('socials', { ...localData.socials, medium: value })}
+                        value={localData.socials?.medium?.url || ''}
+                        onChange={(value) => updateLocalData('socials', { ...localData.socials, medium: { url: value, label: 'Medium' } })}
                         placeholder="https://medium.com/@yourusername"
                       />
                     </div>

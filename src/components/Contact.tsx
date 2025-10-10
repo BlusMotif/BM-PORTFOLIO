@@ -116,11 +116,13 @@ const Contact: React.FC<ContactProps> = ({ data }) => {
             <div className="mt-8">
               <h4 className="text-xl font-semibold mb-4">Connect</h4>
               <div className="flex space-x-4">
-                {data.socials && Object.entries(data.socials).map(([key, value]: [string, any]) => (
-                  value?.url && (
+                {data.socials && Object.entries(data.socials).map(([key, value]: [string, any]) => {
+                  // Handle both object format {url: string, label: string} and string format
+                  const url = typeof value === 'string' ? value : value?.url;
+                  return url && (
                     <a
                       key={key}
-                      href={value.url}
+                      href={url}
                       target="_blank"
                       rel="noopener noreferrer"
                       aria-label={`${key} profile`}
@@ -157,7 +159,7 @@ const Contact: React.FC<ContactProps> = ({ data }) => {
                       </svg>
                     </a>
                   )
-                ))}
+                })}
               </div>
             </div>
           </motion.div>

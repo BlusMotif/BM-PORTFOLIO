@@ -56,11 +56,13 @@ const Footer: React.FC = () => {
         {data.footer.showSocialLinks && data.socials && (
           <div className="flex justify-center space-x-6 mt-8">
             {Object.entries(data.socials).map(([platform, socialData]: [string, any]) => {
-              if (!socialData?.url) return null;
+              // Handle both object format {url: string, label: string} and string format
+              const url = typeof socialData === 'string' ? socialData : socialData?.url;
+              if (!url) return null;
               return (
                 <motion.a
                   key={platform}
-                  href={socialData.url}
+                  href={url}
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={`${platform} profile`}
