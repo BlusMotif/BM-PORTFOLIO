@@ -1453,12 +1453,39 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                       />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-white mb-3">Instagram</h3>
+                      <h3 className="text-lg font-semibold text-white mb-3">YouTube</h3>
                       <TextInput
-                        label="Instagram URL"
-                        value={localData.socials?.instagram || ''}
-                        onChange={(value) => updateLocalData('socials', { ...localData.socials, instagram: value })}
-                        placeholder="https://instagram.com/yourusername"
+                        label="YouTube URL"
+                        value={localData.socials?.youtube || ''}
+                        onChange={(value) => updateLocalData('socials', { ...localData.socials, youtube: value })}
+                        placeholder="https://youtube.com/@yourchannel"
+                      />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-3">Discord</h3>
+                      <TextInput
+                        label="Discord Server Invite"
+                        value={localData.socials?.discord || ''}
+                        onChange={(value) => updateLocalData('socials', { ...localData.socials, discord: value })}
+                        placeholder="https://discord.gg/yourserver"
+                      />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-3">TikTok</h3>
+                      <TextInput
+                        label="TikTok URL"
+                        value={localData.socials?.tiktok || ''}
+                        onChange={(value) => updateLocalData('socials', { ...localData.socials, tiktok: value })}
+                        placeholder="https://tiktok.com/@yourusername"
+                      />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-3">Medium</h3>
+                      <TextInput
+                        label="Medium URL"
+                        value={localData.socials?.medium || ''}
+                        onChange={(value) => updateLocalData('socials', { ...localData.socials, medium: value })}
+                        placeholder="https://medium.com/@yourusername"
                       />
                     </div>
                     <div>
