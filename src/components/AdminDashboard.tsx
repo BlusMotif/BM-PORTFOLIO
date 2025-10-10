@@ -175,7 +175,73 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
   const { data } = useFirebase();
   const [activeTab, setActiveTab] = useState('hero');
   const [saving, setSaving] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const renderTabIcon = (icon: string) => {
+    switch (icon) {
+      case '🚀':
+        return (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+        );
+      case '👤':
+        return (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+        );
+      case '⚡':
+        return (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+        );
+      case '🛠️':
+        return (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        );
+      case '💼':
+        return (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m8 0V8a2 2 0 01-2 2H8a2 2 0 01-2-2V6m8 0H8m0 0V4" />
+          </svg>
+        );
+      case '💬':
+        return (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+          </svg>
+        );
+      case '📧':
+        return (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+        );
+      case '🔗':
+        return (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+          </svg>
+        );
+      case '🧭':
+        return (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+          </svg>
+        );
+      case '🎨':
+        return (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4h4a2 2 0 002-2V5z" />
+          </svg>
+        );
+      default:
+        return <span className="text-lg">{icon}</span>;
+    }
+  };
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [localData, setLocalData] = useState<any>({});
 
@@ -682,7 +748,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                         : 'text-gray-300 hover:bg-gray-700/50 hover:text-white'
                     }`}
                   >
-                    <span className="text-lg sm:text-xl">{tab.icon}</span>
+                    <div className="flex-shrink-0">
+                      {renderTabIcon(tab.icon)}
+                    </div>
                     <span className="font-medium text-sm sm:text-base">{tab.label}</span>
                   </button>
                 ))}
@@ -722,7 +790,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
               {activeTab === 'hero' && (
                 <div>
                   <div className="flex items-center space-x-3 mb-6">
-                    <span className="text-2xl">🚀</span>
+                    <div className="flex-shrink-0">
+                      {renderTabIcon('🚀')}
+                    </div>
                     <h2 className="text-2xl font-bold text-white">Hero Section</h2>
                   </div>
                   <TextInput
@@ -776,7 +846,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
               {activeTab === 'about' && (
                 <div>
                   <div className="flex items-center space-x-3 mb-6">
-                    <span className="text-2xl">👤</span>
+                    <div className="flex-shrink-0">
+                      {renderTabIcon('👤')}
+                    </div>
                     <h2 className="text-2xl font-bold text-white">About Me</h2>
                   </div>
                   <TextInput
@@ -934,7 +1006,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
               {activeTab === 'skills' && (
                 <div>
                   <div className="flex items-center space-x-3 mb-6">
-                    <span className="text-2xl">⚡</span>
+                    <div className="flex-shrink-0">
+                      {renderTabIcon('⚡')}
+                    </div>
                     <h2 className="text-2xl font-bold text-white">Skills</h2>
                   </div>
 
@@ -1054,7 +1128,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
               {activeTab === 'services' && (
                 <div>
                   <div className="flex items-center space-x-3 mb-6">
-                    <span className="text-2xl">🛠️</span>
+                    <div className="flex-shrink-0">
+                      {renderTabIcon('🛠️')}
+                    </div>
                     <h2 className="text-2xl font-bold text-white">Services</h2>
                   </div>
                   <div className="space-y-6">
@@ -1168,7 +1244,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                 <div>
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center space-x-3">
-                      <span className="text-2xl">💼</span>
+                      <div className="flex-shrink-0">
+                        {renderTabIcon('💼')}
+                      </div>
                       <h2 className="text-2xl font-bold text-white">Projects</h2>
                     </div>
                     <button
@@ -1312,7 +1390,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
               {activeTab === 'testimonials' && (
                 <div>
                   <div className="flex items-center space-x-3 mb-6">
-                    <span className="text-2xl">💬</span>
+                    <div className="flex-shrink-0">
+                      {renderTabIcon('💬')}
+                    </div>
                     <h2 className="text-2xl font-bold text-white">Client Reviews</h2>
                   </div>
                   <div className="space-y-6">
@@ -1381,7 +1461,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
               {activeTab === 'contact' && (
                 <div>
                   <div className="flex items-center space-x-3 mb-6">
-                    <span className="text-2xl">📧</span>
+                    <div className="flex-shrink-0">
+                      {renderTabIcon('📧')}
+                    </div>
                     <h2 className="text-2xl font-bold text-white">Contact Information</h2>
                   </div>
                   <TextInput
@@ -1421,7 +1503,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
               {activeTab === 'socials' && (
                 <div>
                   <div className="flex items-center space-x-3 mb-6">
-                    <span className="text-2xl">🔗</span>
+                    <div className="flex-shrink-0">
+                      {renderTabIcon('🔗')}
+                    </div>
                     <h2 className="text-2xl font-bold text-white">Social Links</h2>
                   </div>
                   <div className="space-y-6">
@@ -1450,6 +1534,24 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                         value={localData.socials?.twitter || ''}
                         onChange={(value) => updateLocalData('socials', { ...localData.socials, twitter: value })}
                         placeholder="https://twitter.com/yourusername"
+                      />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-3">Instagram</h3>
+                      <TextInput
+                        label="Instagram URL"
+                        value={localData.socials?.instagram || ''}
+                        onChange={(value) => updateLocalData('socials', { ...localData.socials, instagram: value })}
+                        placeholder="https://instagram.com/yourusername"
+                      />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-3">Facebook</h3>
+                      <TextInput
+                        label="Facebook URL"
+                        value={localData.socials?.facebook || ''}
+                        onChange={(value) => updateLocalData('socials', { ...localData.socials, facebook: value })}
+                        placeholder="https://facebook.com/yourprofile"
                       />
                     </div>
                     <div>
@@ -1537,7 +1639,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
               {activeTab === 'navigation' && (
                 <div>
                   <div className="flex items-center space-x-3 mb-6">
-                    <span className="text-2xl">🧭</span>
+                    <div className="flex-shrink-0">
+                      {renderTabIcon('🧭')}
+                    </div>
                     <h2 className="text-2xl font-bold text-white">Navigation & Branding</h2>
                   </div>
                   <div className="space-y-6">
@@ -1633,7 +1737,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
               {activeTab === 'theme' && (
                 <div>
                   <div className="flex items-center space-x-3 mb-6">
-                    <span className="text-2xl">🎨</span>
+                    <div className="flex-shrink-0">
+                      {renderTabIcon('🎨')}
+                    </div>
                     <h2 className="text-2xl font-bold text-white">Design & Colors</h2>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
