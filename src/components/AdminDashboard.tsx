@@ -175,6 +175,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
   const { data } = useFirebase();
   const [activeTab, setActiveTab] = useState('hero');
   const [saving, setSaving] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const renderTabIcon = (icon: string) => {
     switch (icon) {
       case '🚀':
