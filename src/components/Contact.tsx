@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { pushData } from '../firebase/database';
+import { useForm } from '@formspree/react';
 
 interface ContactProps {
   data: any;
@@ -8,28 +9,51 @@ interface ContactProps {
 
 const Contact: React.FC<ContactProps> = ({ data }) => {
   const [formData, setFormData] = useState({ name: '', email: '', message: '' });
-  const [submitting, setSubmitting] = useState(false);
+  const [state, handleSubmit] = useForm(import.meta.env.VITE_FORMSPREE_FORM_ID || "xpwyyowd");
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    if (!data.contact?.formEnabled) return;
-
-    e.preventDefault();
-    setSubmitting(true);
-    try {
-      await pushData('messages', { ...formData, timestamp: Date.now() });
-      alert('Message sent successfully!');
-      setFormData({ name: '', email: '', message: '' });
-    } catch (error) {
-      console.error('Error sending message:', error);
-      alert('Error sending message. Please try again.');
-    } finally {
-      setSubmitting(false);
+  // Save to Firebase when form submission succeeds
+  useEffect(() => {
+    if (state.succeeded && formData.name && formData.email && formData.message) {
+      pushData('messages', { ...formData, timestamp: Date.now() })
+        .then(() => {
+          console.log('Message saved to Firebase');
+        })
+        .catch((error) => {
+          console.error('Failed to save to Firebase:', error);
+        });
     }
-  };
+  }, [state.succeeded, formData]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
+
+  // Show success message when form is successfully submitted
+  if (state.succeeded) {
+    return (
+      <section id="contact" className="pt-16 py-20 px-4 sm:px-6 lg:px-8 bg-gray-800/50">
+        <div className="max-w-7xl mx-auto text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <div className="bg-green-500/20 border border-green-500/50 rounded-lg p-8 max-w-md mx-auto">
+              <div className="text-6xl mb-4">✅</div>
+              <h3 className="text-2xl font-bold text-white mb-2">Message Sent!</h3>
+              <p className="text-gray-300 mb-4">Thank you for your message. I'll get back to you soon.</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg transition-colors"
+              >
+                Send Another Message
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+    );
+  }
 
   const renderContactIcon = (iconType: string) => {
     switch (iconType) {
@@ -158,10 +182,10 @@ const Contact: React.FC<ContactProps> = ({ data }) => {
                 </div>
                 <button
                   type="submit"
-                  disabled={submitting}
+                  disabled={state.submitting}
                   className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-lg font-medium hover:from-purple-600 hover:to-pink-600 transition-all duration-200 disabled:opacity-50"
                 >
-                  {submitting ? 'Sending...' : 'Send Message'}
+                  {state.submitting ? 'Sending...' : 'Send Message'}
                 </button>
               </form>
             </motion.div>

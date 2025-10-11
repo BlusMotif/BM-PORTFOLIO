@@ -1828,9 +1828,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                           <div key={platform.key} className="bg-gray-700/50 p-4 rounded-lg border border-gray-600">
                             <div className="flex items-center space-x-3 mb-3">
                               <div
-                                className="w-8 h-8 rounded-full flex items-center justify-center"
-                                // eslint-disable-next-line no-inline-styles
-                                style={{ backgroundColor: platform.color }}
+                                className="w-8 h-8 rounded-full flex items-center justify-center social-platform-icon"
+                                style={{ '--platform-bg-color': platform.color } as React.CSSProperties}
                               >
                                 <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
                                   {platform.icon === 'github' && (

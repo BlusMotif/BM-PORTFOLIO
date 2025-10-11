@@ -41,3 +41,9 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+/* Social media platform icon styles */
+.social-platform-icon {
+  --platform-bg-color: #333;
+  background-color: var(--platform-bg-color);
+}
