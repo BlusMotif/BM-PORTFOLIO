@@ -117,24 +117,7 @@ export const initializeDefaultData = async () => {
     await setData('siteConfig/testimonials', {
       title: 'What Clients Say',
       subtitle: 'Feedback from people I\'ve worked with',
-      testimonials: [
-        {
-          name: 'John Doe',
-          position: 'CEO',
-          company: 'TechCorp',
-          content: 'Blu delivered exceptional work on our project. The attention to detail and technical expertise was outstanding.',
-          image: '',
-          rating: 5
-        },
-        {
-          name: 'Jane Smith',
-          position: 'Product Manager',
-          company: 'StartupXYZ',
-          content: 'Working with Blu was a pleasure. They understood our requirements perfectly and delivered beyond expectations.',
-          image: '',
-          rating: 5
-        }
-      ]
+      testimonials: []
     });
 
     // Resume section
