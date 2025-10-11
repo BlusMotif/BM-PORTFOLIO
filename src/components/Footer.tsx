@@ -55,11 +55,23 @@ const Footer: React.FC = () => {
         {/* Social Links */}
         {data.footer.showSocialLinks && data.socials && (
           <div className="flex justify-center space-x-6 mt-8">
-            {Object.entries(data.socials).map(([platform, socialData]: [string, any]) => {
-              // Handle both object format {url: string, label: string} and string format
-              const url = typeof socialData === 'string' ? socialData : socialData?.url;
-              // Only render if URL exists and is not empty
-              if (!url || url.trim() === '') return null;
+            {Object.entries(data.socials)
+              .filter(([_platform, socialData]: [string, any]) => {
+                // Handle both object format {url: string, label: string} and string format
+                const url = typeof socialData === 'string' ? socialData : socialData?.url;
+                // Only include if URL exists and is not empty
+                return url && url.trim() !== '';
+              })
+              .reduce((unique: Array<[string, any]>, [platform, socialData]) => {
+                // Ensure each platform appears only once
+                if (!unique.some(([existingPlatform]) => existingPlatform === platform)) {
+                  unique.push([platform, socialData]);
+                }
+                return unique;
+              }, [])
+              .map(([platform, socialData]: [string, any]) => {
+                // Handle both object format {url: string, label: string} and string format
+                const url = typeof socialData === 'string' ? socialData : socialData?.url;
 
               const getPlatformColor = (platform: string) => {
                 const colors: { [key: string]: string } = {
