@@ -1829,6 +1829,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                             <div className="flex items-center space-x-3 mb-3">
                               <div
                                 className="w-8 h-8 rounded-full flex items-center justify-center"
+                                // eslint-disable-next-line no-inline-styles
                                 style={{ backgroundColor: platform.color }}
                               >
                                 <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
