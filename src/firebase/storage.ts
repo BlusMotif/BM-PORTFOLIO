@@ -6,8 +6,14 @@ const fileToBase64 = (file: File | Blob): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = error => reject(error);
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        resolve(reader.result);
+      } else {
+        reject(new Error('Failed to convert file to base64'));
+      }
+    };
+    reader.onerror = (error) => reject(error);
   });
 };
 
@@ -21,17 +27,15 @@ export const uploadFile = async (path: string, file: File): Promise<string> => {
     const sanitizedPath = path.replace(/\./g, '_').replace(/\//g, '_');
 
     if (file.size <= CHUNK_SIZE) {
+      // Validate the base64 data
+      if (!base64Data || typeof base64Data !== 'string' || !base64Data.startsWith('data:')) {
+        throw new Error('Invalid base64 data for file');
+      }
+
       // Small file - store directly using sanitized path as key
       const fileRef = ref(database, `files/${sanitizedPath}`);
       const fileData = {
-        name: file.name,
-        type: file.type,
-        size: file.size,
-        data: base64Data,
-        uploadedAt: new Date().toISOString(),
-        originalPath: path,
-        chunks: 1,
-        chunkIndex: 0
+        data: base64Data
       };
       await set(fileRef, fileData);
       return sanitizedPath;
@@ -46,17 +50,16 @@ export const uploadFile = async (path: string, file: File): Promise<string> => {
         const chunk = file.slice(start, end);
         const chunkBase64 = await fileToBase64(chunk);
 
+        // Validate the base64 data
+        if (!chunkBase64 || typeof chunkBase64 !== 'string' || !chunkBase64.startsWith('data:')) {
+          throw new Error(`Invalid base64 data for chunk ${i}`);
+        }
+
         const chunkRef = push(ref(database, `files/${sanitizedPath}`));
         const chunkData = {
-          name: file.name,
-          type: file.type,
-          size: file.size,
           data: chunkBase64,
-          uploadedAt: new Date().toISOString(),
-          originalPath: path,
-          chunks: totalChunks,
-          chunkIndex: i,
-          totalSize: file.size
+          index: i,
+          total: totalChunks
         };
 
         chunkPromises.push(set(chunkRef, chunkData));
@@ -87,17 +90,29 @@ export const getFileURL = async (fileKey: string): Promise<string | null> => {
 
       if (chunkedSnapshot.exists()) {
         const chunksData = chunkedSnapshot.val();
-        const chunks = Object.values(chunksData).sort((a: any, b: any) => a.chunkIndex - b.chunkIndex);
+        
+        // Ensure chunksData is an object and has values
+        if (!chunksData || typeof chunksData !== 'object') {
+          console.error('Invalid chunks data structure:', chunksData);
+          return null;
+        }
+        
+        const chunks = Object.values(chunksData).sort((a: any, b: any) => a.index - b.index);
 
         // Combine all chunk data
         let combinedBase64 = '';
         for (const chunk of chunks) {
-          combinedBase64 += (chunk as any).data.split(',')[1]; // Remove data URL prefix and combine
+          if (chunk && typeof chunk === 'object' && (chunk as any).data) {
+            combinedBase64 += (chunk as any).data.split(',')[1]; // Remove data URL prefix and combine
+          }
         }
 
         // Add back the data URL prefix from the first chunk
         const firstChunk = chunks[0] as any;
-        return `data:${firstChunk.type};base64,${combinedBase64}`;
+        if (firstChunk && firstChunk.data) {
+          const mimeType = firstChunk.data.split(';')[0].split(':')[1];
+          return `data:${mimeType};base64,${combinedBase64}`;
+        }
       }
     } else {
       // Single file - get by exact key

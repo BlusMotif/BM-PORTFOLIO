@@ -310,6 +310,20 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
         processedData.projects = [];
       }
 
+      // Ensure testimonials has the correct structure
+      if (!processedData.testimonials) {
+        processedData.testimonials = {
+          title: 'What Clients Say',
+          subtitle: 'Feedback from people I\'ve worked with',
+          testimonials: []
+        };
+      } else if (!processedData.testimonials.testimonials || !Array.isArray(processedData.testimonials.testimonials)) {
+        processedData.testimonials = {
+          ...processedData.testimonials,
+          testimonials: []
+        };
+      }
+
       setLocalData(processedData);
     }
   }, [data]);
@@ -415,6 +429,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
           case 'testimonialImage':
             setTestimonialImageProgress(prev => Math.min(prev + 10, 90));
             break;
+          case 'logo':
+            setLogoProgress(prev => Math.min(prev + 10, 90));
+            break;
         }
       }, 200);
 
@@ -450,11 +467,20 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
           (section === 'testimonials' && field.startsWith('testimonial_') && field.endsWith('_image'))) {
         // Handle array-based image uploads specially
         const itemIndex = parseInt(field.split('_')[1]);
-        const items = [...(localData[section] || [])];
-        if (items[itemIndex]) {
-          items[itemIndex] = { ...items[itemIndex], image: url };
+        if (section === 'testimonials') {
+          const currentTestimonials = localData.testimonials?.testimonials || [];
+          const testimonials = [...currentTestimonials];
+          if (testimonials[itemIndex]) {
+            testimonials[itemIndex] = { ...testimonials[itemIndex], image: url };
+          }
+          sectionData = { ...localData.testimonials, testimonials };
+        } else {
+          const items = [...(localData[section] || [])];
+          if (items[itemIndex]) {
+            items[itemIndex] = { ...items[itemIndex], image: url };
+          }
+          sectionData = items;
         }
-        sectionData = items;
       } else {
         sectionData = { ...localData[section], [field]: url };
       }
@@ -464,15 +490,28 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
       if ((section === 'projects' && field.startsWith('project_') && field.endsWith('_image')) ||
           (section === 'testimonials' && field.startsWith('testimonial_') && field.endsWith('_image'))) {
         const itemIndex = parseInt(field.split('_')[1]);
-        const items = [...(localData[section] || [])];
-        if (items[itemIndex]) {
-          items[itemIndex] = { ...items[itemIndex], image: url };
+        if (section === 'testimonials') {
+          const currentTestimonials = localData.testimonials?.testimonials || [];
+          const testimonials = [...currentTestimonials];
+          if (testimonials[itemIndex]) {
+            testimonials[itemIndex] = { ...testimonials[itemIndex], image: url };
+          }
+          setLocalData((prev: any) => ({
+            ...prev,
+            testimonials: { ...prev.testimonials, testimonials }
+          }));
+          setHasUnsavedChanges(true);
+        } else {
+          const items = [...(localData[section] || [])];
+          if (items[itemIndex]) {
+            items[itemIndex] = { ...items[itemIndex], image: url };
+          }
+          setLocalData((prev: any) => ({
+            ...prev,
+            [section]: items
+          }));
+          setHasUnsavedChanges(true);
         }
-        setLocalData((prev: any) => ({
-          ...prev,
-          [section]: items
-        }));
-        setHasUnsavedChanges(true);
       } else {
         updateLocalData(section, { [field]: url });
       }
