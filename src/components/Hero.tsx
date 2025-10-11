@@ -6,7 +6,7 @@ interface HeroProps {
 }
 
 // Component to load images from database using keys
-const ImageLoader: React.FC<{ src: string; alt: string; className: string; style?: React.CSSProperties }> = ({ src, alt, className, style }) => {
+const ImageLoader: React.FC<{ src: string; alt: string; className: string }> = ({ src, alt, className }) => {
   const [imageUrl, setImageUrl] = useState<string>('');
 
   useEffect(() => {
@@ -50,7 +50,13 @@ const ImageLoader: React.FC<{ src: string; alt: string; className: string; style
     return <div className={`${className} bg-gray-700 animate-pulse rounded-full`} />;
   }
 
-  return <img src={imageUrl} alt={alt} className={className} style={style} />;
+  return (
+    <img
+      src={imageUrl}
+      alt={alt}
+      className={className}
+    />
+  );
 };
 
 const Hero: React.FC<HeroProps> = ({ data }) => {
