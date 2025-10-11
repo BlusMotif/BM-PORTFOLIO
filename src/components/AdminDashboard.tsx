@@ -1396,8 +1396,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                     </div>
                     <h2 className="text-2xl font-bold text-white">Client Reviews</h2>
                   </div>
-                  <div className="space-y-6">
-                    <div>
+                  <div className="space-y-8">
+                    {/* Review 1 */}
+                    <div className="border-b border-gray-700 pb-6">
                       <h3 className="text-lg font-semibold text-white mb-3">Review 1</h3>
                       <TextInput
                         label="Client Name"
@@ -1410,6 +1411,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                         placeholder="John Smith"
                       />
                       <TextInput
+                        label="Position"
+                        value={localData.testimonials?.[0]?.position || ''}
+                        onChange={(value) => {
+                          const testimonials = [...(localData.testimonials || [])];
+                          testimonials[0] = { ...testimonials[0], position: value };
+                          updateLocalData('testimonials', testimonials);
+                        }}
+                        placeholder="CEO"
+                      />
+                      <TextInput
                         label="Company"
                         value={localData.testimonials?.[0]?.company || ''}
                         onChange={(value) => {
@@ -1420,11 +1431,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                         placeholder="Tech Corp"
                       />
                       <TextInput
-                        label="Review"
-                        value={localData.testimonials?.[0]?.review || ''}
+                        label="Review Content"
+                        value={localData.testimonials?.[0]?.content || ''}
                         onChange={(value) => {
                           const testimonials = [...(localData.testimonials || [])];
-                          testimonials[0] = { ...testimonials[0], review: value };
+                          testimonials[0] = { ...testimonials[0], content: value };
                           updateLocalData('testimonials', testimonials);
                         }}
                         placeholder="Amazing work! Highly recommend."
@@ -1450,6 +1461,216 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                         section="testimonials"
                         field="testimonial_0_image"
                         path={`testimonials/client1_${Date.now()}.jpg`}
+                        uploading={testimonialImageUploading}
+                        uploadProgress={testimonialImageProgress}
+                        onFileUpload={(file, path, section, field) => handleFileUpload(file, path, section, field, 'testimonialImage')}
+                      />
+                    </div>
+
+                    {/* Review 2 */}
+                    <div className="border-b border-gray-700 pb-6">
+                      <h3 className="text-lg font-semibold text-white mb-3">Review 2</h3>
+                      <TextInput
+                        label="Client Name"
+                        value={localData.testimonials?.[1]?.name || ''}
+                        onChange={(value) => {
+                          const testimonials = [...(localData.testimonials || [])];
+                          testimonials[1] = { ...testimonials[1], name: value };
+                          updateLocalData('testimonials', testimonials);
+                        }}
+                        placeholder="Jane Doe"
+                      />
+                      <TextInput
+                        label="Position"
+                        value={localData.testimonials?.[1]?.position || ''}
+                        onChange={(value) => {
+                          const testimonials = [...(localData.testimonials || [])];
+                          testimonials[1] = { ...testimonials[1], position: value };
+                          updateLocalData('testimonials', testimonials);
+                        }}
+                        placeholder="Product Manager"
+                      />
+                      <TextInput
+                        label="Company"
+                        value={localData.testimonials?.[1]?.company || ''}
+                        onChange={(value) => {
+                          const testimonials = [...(localData.testimonials || [])];
+                          testimonials[1] = { ...testimonials[1], company: value };
+                          updateLocalData('testimonials', testimonials);
+                        }}
+                        placeholder="StartupXYZ"
+                      />
+                      <TextInput
+                        label="Review Content"
+                        value={localData.testimonials?.[1]?.content || ''}
+                        onChange={(value) => {
+                          const testimonials = [...(localData.testimonials || [])];
+                          testimonials[1] = { ...testimonials[1], content: value };
+                          updateLocalData('testimonials', testimonials);
+                        }}
+                        placeholder="Working with Blu was a pleasure. They understood our requirements perfectly."
+                        multiline
+                      />
+                      <SelectInput
+                        label="Rating"
+                        value={localData.testimonials?.[1]?.rating?.toString() || '5'}
+                        onChange={(value) => {
+                          const testimonials = [...(localData.testimonials || [])];
+                          testimonials[1] = { ...testimonials[1], rating: parseInt(value) };
+                          updateLocalData('testimonials', testimonials);
+                        }}
+                        options={[
+                          { value: '5', label: '⭐⭐⭐⭐⭐ (5 stars)' },
+                          { value: '4', label: '⭐⭐⭐⭐ (4 stars)' },
+                          { value: '3', label: '⭐⭐⭐ (3 stars)' }
+                        ]}
+                      />
+                      <ImageUpload
+                        label="Client Photo"
+                        value={localData.testimonials?.[1]?.image || ''}
+                        section="testimonials"
+                        field="testimonial_1_image"
+                        path={`testimonials/client2_${Date.now()}.jpg`}
+                        uploading={testimonialImageUploading}
+                        uploadProgress={testimonialImageProgress}
+                        onFileUpload={(file, path, section, field) => handleFileUpload(file, path, section, field, 'testimonialImage')}
+                      />
+                    </div>
+
+                    {/* Review 3 */}
+                    <div className="border-b border-gray-700 pb-6">
+                      <h3 className="text-lg font-semibold text-white mb-3">Review 3</h3>
+                      <TextInput
+                        label="Client Name"
+                        value={localData.testimonials?.[2]?.name || ''}
+                        onChange={(value) => {
+                          const testimonials = [...(localData.testimonials || [])];
+                          testimonials[2] = { ...testimonials[2], name: value };
+                          updateLocalData('testimonials', testimonials);
+                        }}
+                        placeholder="Mike Johnson"
+                      />
+                      <TextInput
+                        label="Position"
+                        value={localData.testimonials?.[2]?.position || ''}
+                        onChange={(value) => {
+                          const testimonials = [...(localData.testimonials || [])];
+                          testimonials[2] = { ...testimonials[2], position: value };
+                          updateLocalData('testimonials', testimonials);
+                        }}
+                        placeholder="CTO"
+                      />
+                      <TextInput
+                        label="Company"
+                        value={localData.testimonials?.[2]?.company || ''}
+                        onChange={(value) => {
+                          const testimonials = [...(localData.testimonials || [])];
+                          testimonials[2] = { ...testimonials[2], company: value };
+                          updateLocalData('testimonials', testimonials);
+                        }}
+                        placeholder="InnovateTech"
+                      />
+                      <TextInput
+                        label="Review Content"
+                        value={localData.testimonials?.[2]?.content || ''}
+                        onChange={(value) => {
+                          const testimonials = [...(localData.testimonials || [])];
+                          testimonials[2] = { ...testimonials[2], content: value };
+                          updateLocalData('testimonials', testimonials);
+                        }}
+                        placeholder="Blu consistently delivers high-quality work and meets deadlines. Highly recommended!"
+                        multiline
+                      />
+                      <SelectInput
+                        label="Rating"
+                        value={localData.testimonials?.[2]?.rating?.toString() || '5'}
+                        onChange={(value) => {
+                          const testimonials = [...(localData.testimonials || [])];
+                          testimonials[2] = { ...testimonials[2], rating: parseInt(value) };
+                          updateLocalData('testimonials', testimonials);
+                        }}
+                        options={[
+                          { value: '5', label: '⭐⭐⭐⭐⭐ (5 stars)' },
+                          { value: '4', label: '⭐⭐⭐⭐ (4 stars)' },
+                          { value: '3', label: '⭐⭐⭐ (3 stars)' }
+                        ]}
+                      />
+                      <ImageUpload
+                        label="Client Photo"
+                        value={localData.testimonials?.[2]?.image || ''}
+                        section="testimonials"
+                        field="testimonial_2_image"
+                        path={`testimonials/client3_${Date.now()}.jpg`}
+                        uploading={testimonialImageUploading}
+                        uploadProgress={testimonialImageProgress}
+                        onFileUpload={(file, path, section, field) => handleFileUpload(file, path, section, field, 'testimonialImage')}
+                      />
+                    </div>
+
+                    {/* Review 4 */}
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-3">Review 4</h3>
+                      <TextInput
+                        label="Client Name"
+                        value={localData.testimonials?.[3]?.name || ''}
+                        onChange={(value) => {
+                          const testimonials = [...(localData.testimonials || [])];
+                          testimonials[3] = { ...testimonials[3], name: value };
+                          updateLocalData('testimonials', testimonials);
+                        }}
+                        placeholder="Sarah Wilson"
+                      />
+                      <TextInput
+                        label="Position"
+                        value={localData.testimonials?.[3]?.position || ''}
+                        onChange={(value) => {
+                          const testimonials = [...(localData.testimonials || [])];
+                          testimonials[3] = { ...testimonials[3], position: value };
+                          updateLocalData('testimonials', testimonials);
+                        }}
+                        placeholder="Founder"
+                      />
+                      <TextInput
+                        label="Company"
+                        value={localData.testimonials?.[3]?.company || ''}
+                        onChange={(value) => {
+                          const testimonials = [...(localData.testimonials || [])];
+                          testimonials[3] = { ...testimonials[3], company: value };
+                          updateLocalData('testimonials', testimonials);
+                        }}
+                        placeholder="DesignStudio"
+                      />
+                      <TextInput
+                        label="Review Content"
+                        value={localData.testimonials?.[3]?.content || ''}
+                        onChange={(value) => {
+                          const testimonials = [...(localData.testimonials || [])];
+                          testimonials[3] = { ...testimonials[3], content: value };
+                          updateLocalData('testimonials', testimonials);
+                        }}
+                        placeholder="Exceptional creativity and technical skills. Blu brought our vision to life perfectly."
+                        multiline
+                      />
+                      <SelectInput
+                        label="Rating"
+                        value={localData.testimonials?.[3]?.rating?.toString() || '5'}
+                        onChange={(value) => {
+                          const testimonials = [...(localData.testimonials || [])];
+                          testimonials[3] = { ...testimonials[3], rating: parseInt(value) };
+                          updateLocalData('testimonials', testimonials);
+                        }}
+                        options={[
+                          { value: '5', label: '⭐⭐⭐⭐⭐ (5 stars)' },
+                          { value: '4', label: '⭐⭐⭐⭐ (4 stars)' },
+                          { value: '3', label: '⭐⭐⭐ (3 stars)' }
+                        ]}
+                      />
+                      <ImageUpload
+                        label="Client Photo"
+                        value={localData.testimonials?.[3]?.image || ''}
+                        section="testimonials"
+                        field="testimonial_3_image"
+                        path={`testimonials/client4_${Date.now()}.jpg`}
                         uploading={testimonialImageUploading}
                         uploadProgress={testimonialImageProgress}
                         onFileUpload={(file, path, section, field) => handleFileUpload(file, path, section, field, 'testimonialImage')}

@@ -120,7 +120,7 @@ export const initializeDefaultData = async () => {
       testimonials: [
         {
           name: 'John Doe',
-          position: 'CEO, Tech Company',
+          position: 'CEO',
           company: 'TechCorp',
           content: 'Blu delivered exceptional work on our project. The attention to detail and technical expertise was outstanding.',
           image: '',
